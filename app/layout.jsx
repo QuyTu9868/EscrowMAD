@@ -1,0 +1,30 @@
+import { Providers } from './providers';
+import { Space_Mono, Syne } from 'next/font/google';
+import './globals.css';
+
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-mono',
+});
+
+const syne = Syne({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-syne',
+});
+
+export const metadata = {
+  title: 'EscrowMAD',
+  description: 'Decentralized Escrow on Sepolia',
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en" className={`${spaceMono.variable} ${syne.variable}`}>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
