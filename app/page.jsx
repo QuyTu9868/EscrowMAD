@@ -10,7 +10,7 @@ import {
   useDeployContract,
 } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from './firebase';
 import { collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
@@ -53,7 +53,6 @@ const STATE = { AWAITING_BUYER: 0, ACTIVE: 1, CANCEL_REQUESTED: 2, RETURN_REQUES
 const STATE_LABELS = ['AWAITING BUYER', 'ACTIVE', 'CANCEL REQUESTED', 'RETURN REQUESTED', 'COMPLETED', 'CANCELLED', 'SELLER CLAIMED'];
 const STATE_COLORS = ['#f59e0b', '#22c55e', '#f97316', '#8b5cf6', '#6366f1', '#6b7280', '#6b7280'];
 
-// States considered "done" — navbar Deploy/Join buttons reappear
 const DONE_STATES = [STATE.COMPLETED, STATE.CANCELLED, STATE.SELLER_CLAIMED];
 
 const short  = (a) => a ? `${a.slice(0,6)}...${a.slice(-4)}` : '—';
@@ -128,10 +127,8 @@ function LandingCards() {
   return (
     <div ref={ref} style={{width:'100%', maxWidth:'800px', display:'flex', flexDirection:'column', alignItems:'center'}}>
 
-      {/* ── scroll → About ── */}
       <div className="scroll-sep"><span>SCROLL</span><span className="scroll-arrow">↓</span></div>
 
-      {/* ── About ── */}
       <div className="landing-section">
         <div className="landing-section-label">About</div>
         <div className="about-bento">
@@ -167,10 +164,8 @@ function LandingCards() {
       </div>
 
       <hr className="landing-divider" style={{marginTop:'4rem'}} />
-      {/* ── scroll → Why ── */}
       <div className="scroll-sep"><span>SCROLL</span><span className="scroll-arrow">↓</span></div>
 
-      {/* ── Why ── */}
       <div className="landing-section">
         <div className="landing-section-label">Why EscrowMAD?</div>
         <div className="why-grid">
@@ -192,10 +187,8 @@ function LandingCards() {
       </div>
 
       <hr className="landing-divider" style={{marginTop:'4rem'}} />
-      {/* ── scroll → How to Use ── */}
       <div className="scroll-sep"><span>SCROLL</span><span className="scroll-arrow">↓</span></div>
 
-      {/* ── How to Use ── */}
       <div className="landing-section">
         <div className="landing-section-label">How to Use</div>
         <div className="tl-track">
@@ -216,7 +209,6 @@ function LandingCards() {
         </div>
       </div>
 
-      {/* ── Footer CTA ── */}
       <div className="landing-footer-cta">
         <div className="footer-glow" />
         <h2 className="footer-cta-title">Ready to transact<br/>without trust?</h2>
@@ -234,7 +226,7 @@ function LandingCards() {
   );
 }
 
-export default function Home() {
+function HomeInner() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const { address, isConnected } = useAccount();
@@ -244,7 +236,6 @@ export default function Home() {
   const [inputAddr,       setInputAddr]       = useState('');
   const [navPanel,        setNavPanel]        = useState(null);
   const [myContracts,     setMyContracts]     = useState([]);
-  // 'home' | 'mycontracts'
   const [currentView,     setCurrentView]     = useState('home');
 
   const [deployDesc,    setDeployDesc]    = useState('');
@@ -262,7 +253,6 @@ export default function Home() {
   const [shippedAt,     setShippedAt]     = useState(null);
   const [isDark,        setIsDark]        = useState(true);
 
-  // Sync theme với localStorage
   useEffect(() => {
     const saved = localStorage.getItem('escrowmad_theme');
     if (saved === 'light') setIsDark(false);
@@ -274,7 +264,6 @@ export default function Home() {
     });
   };
 
-  // Ticker to re-render countdown every minute
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60_000);
@@ -400,23 +389,19 @@ export default function Home() {
   const stateNum    = state !== undefined ? Number(state) : null;
   const isLoading   = isPending || isConfirming || isDeployPending || isDeployConfirming;
 
-  // Contract is finished — show Deploy/Join buttons again
   const isDone           = stateNum !== null && DONE_STATES.includes(stateNum);
   const showDeployJoinNav = !contractAddress || isDone;
 
-  // Claim timer
   const claimAvailableTs = shippedAt
     ? shippedAt + 17 * 86400
     : (activeAt ? Number(activeAt) + 14 * 86400 : null);
   const claimCountdown   = claimAvailableTs ? countdown(claimAvailableTs) : null;
   const claimReady       = claimAvailableTs ? isCountdownExpired(claimAvailableTs) : false;
 
-  // Auto-cancel: ACTIVE + seller chưa shipped sau 72h kể từ activeAt
   const autoCancelTs        = (!shipped && activeAt) ? Number(activeAt) + 72 * 3600 : null;
   const autoCancelReady     = autoCancelTs ? isCountdownExpired(autoCancelTs) : false;
   const autoCancelCountdown = autoCancelTs ? countdown(autoCancelTs) : null;
 
-  // Return: chỉ available sau 3 ngày kể từ shippedAt
   const returnAvailableTs    = shippedAt ? shippedAt + 3 * 86400 : null;
   const returnReady          = returnAvailableTs ? isCountdownExpired(returnAvailableTs) : false;
   const returnCountdown      = returnAvailableTs ? countdown(returnAvailableTs) : null;
@@ -563,55 +548,18 @@ export default function Home() {
           background-size: 40px 40px; opacity: var(--grid-opacity);
           z-index: -1;
         }
-        .theme-toggle {
-          background: transparent; border: none; cursor: pointer;
-          font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.4rem;
-          border-radius: 50%; transition: transform 0.2s;
-          display: flex; align-items: center; margin-left: 0.25rem;
-        }
+        .theme-toggle { background: transparent; border: none; cursor: pointer; font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.4rem; border-radius: 50%; transition: transform 0.2s; display: flex; align-items: center; margin-left: 0.25rem; }
         .theme-toggle:hover { transform: scale(1.2); }
-        .navbar {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-          background: var(--navbar-bg); backdrop-filter: blur(12px);
-          border-bottom: 1px solid var(--border);
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0 1.5rem; height: var(--navbar-h);
-        }
+        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: var(--navbar-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; height: var(--navbar-h); }
         .nav-left { display: flex; align-items: center; gap: 0.25rem; }
         .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; background: linear-gradient(135deg, #a78bfa, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-right: 1rem; white-space: nowrap; }
         .nav-btn { background: transparent; border: none; padding: 0.4rem 0.85rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; border-radius: 6px; transition: all 0.15s; white-space: nowrap; }
         .nav-btn:hover { color: var(--text); background: rgba(124,58,237,0.08); }
         .nav-btn.active { color: #a78bfa; background: rgba(124,58,237,0.12); }
-
-        /* ── Nav panel: centered, narrow ── */
-        .nav-panel {
-          position: fixed; top: var(--navbar-h); left: 0; right: 0; z-index: 199;
-          background: var(--surface); border-bottom: 1px solid var(--border);
-          padding: 1.5rem;
-          animation: slideDown 0.15s ease;
-          max-height: calc(100vh - var(--navbar-h)); overflow-y: auto;
-          display: flex;
-          justify-content: center;
-        }
-        .panel-form {
-          width: 100%;
-          max-width: 420px;
-        }
-        .panel-form-wide {
-          width: 100%;
-          max-width: 680px;
-        }
-
+        .nav-panel { position: fixed; top: var(--navbar-h); left: 0; right: 0; z-index: 199; background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.5rem; animation: slideDown 0.15s ease; max-height: calc(100vh - var(--navbar-h)); overflow-y: auto; display: flex; justify-content: center; }
+        .panel-form { width: 100%; max-width: 420px; }
+        .panel-form-wide { width: 100%; max-width: 680px; }
         @keyframes slideDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-        .mc-table { width: 100%; border-collapse: collapse; }
-        .mc-table th { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; padding: 0 0.5rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
-        .mc-table td { padding: 0.55rem 0.5rem; font-size: 0.8rem; border-bottom: 1px solid rgba(30,30,46,0.5); }
-        .mc-table tr:last-child td { border-bottom: none; }
-        .mc-table tr:hover td { background: rgba(124,58,237,0.06); cursor: pointer; }
-        .mc-table .td-desc { font-weight: 600; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .mc-table .td-dep  { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent2); white-space: nowrap; }
-        .mc-table .td-addr { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
-        .mc-empty { color: var(--muted); font-size: 0.8rem; font-family: var(--font-mono); padding: 0.5rem 0; }
         .panel-title { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 1rem; }
         .app { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem 5rem; padding-top: calc(var(--navbar-h) + 2rem); }
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; position: relative; z-index: 1; }
@@ -643,11 +591,7 @@ export default function Home() {
         .btn-shipped   { background: rgba(6,182,212,0.12); color: var(--accent2); border-color: var(--accent2); }
         .btn-shipped:hover:not(:disabled)   { background: rgba(6,182,212,0.2); transform: translateY(-1px); }
         .btn-shipped.done { opacity: 0.6; cursor: default; }
-        /* Claim locked until timer expires */
-        .btn-claim-locked {
-          opacity: 0.35; cursor: not-allowed;
-          background: transparent; color: var(--accent2); border-color: var(--accent2);
-        }
+        .btn-claim-locked { opacity: 0.35; cursor: not-allowed; background: transparent; color: var(--accent2); border-color: var(--accent2); }
         .btn-icon { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.75rem; color: var(--muted); cursor: pointer; transition: all 0.15s; font-size: 1rem; line-height: 1; }
         .btn-icon:hover:not(:disabled) { border-color: var(--accent); color: #a78bfa; }
         .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -671,16 +615,12 @@ export default function Home() {
         .back-btn { background: transparent; border: none; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; cursor: pointer; padding: 0; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.3rem; transition: color 0.15s; }
         .back-btn:hover { color: var(--text); }
         .deploy-note { font-size: 0.72rem; font-family: var(--font-mono); color: var(--muted); margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.15); border-radius: 8px; }
-
-        /* ── Landing: Orb background ── */
         .landing-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
         .orb { position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.16; animation: orbFloat 12s ease-in-out infinite; }
         .orb-1 { width: 520px; height: 520px; background: radial-gradient(circle, #7c3aed, transparent 70%); top: -120px; left: -100px; animation-delay: 0s; }
         .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, #06b6d4, transparent 70%); bottom: -80px; right: -80px; animation-delay: -4s; }
         .orb-3 { width: 280px; height: 280px; background: radial-gradient(circle, #a78bfa, transparent 70%); top: 45%; left: 52%; animation-delay: -8s; }
         @keyframes orbFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-28px) scale(1.04)} }
-
-        /* ── Hero ── */
         .connect-prompt { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 2rem; }
         .connect-logo { width: 200px; height: 200px; object-fit: contain; margin-bottom: 1.75rem; filter: drop-shadow(0 0 48px rgba(167,139,250,0.45)); animation: logoIn 0.85s cubic-bezier(0.34,1.56,0.64,1) both; }
         @keyframes logoIn { from{opacity:0;transform:scale(0.72) translateY(22px)} to{opacity:1;transform:scale(1) translateY(0)} }
@@ -691,26 +631,14 @@ export default function Home() {
         .connect-sub { font-family: var(--font-mono); font-size: 0.84rem; color: var(--muted); max-width: 420px; line-height: 1.85; margin-bottom: 0.6rem; animation: fadeUpL 0.6s 0.3s ease both; }
         .connect-sub strong { color: var(--accent); font-weight: 500; }
         .connect-cta { margin-bottom: 3.5rem; animation: fadeUpL 0.6s 0.45s ease both; }
-        .connect-wallet-btn { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.07em; color: #09090f; background: linear-gradient(135deg, #a78bfa, #06b6d4); border: none; border-radius: 12px; padding: 0.9rem 2.2rem; cursor: pointer; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
-        .connect-wallet-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,0.18),transparent); opacity:0; transition:opacity 0.2s; }
-        .connect-wallet-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(124,58,237,0.45); }
-        .connect-wallet-btn:hover::after { opacity:1; }
         @keyframes fadeUpL { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-
-        /* ── Scroll separator ── */
         .scroll-sep { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 2rem 0 0.5rem; width: 100%; font-family: var(--font-mono); font-size: 0.54rem; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; opacity: 0.5; }
         .scroll-sep .scroll-arrow { animation: bounceD 1.6s ease-in-out infinite; font-size: 0.78rem; }
         @keyframes bounceD { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
-
-        /* ── Section divider ── */
         .landing-divider { border: none; border-top: 1px solid var(--border); width: 75vw; max-width: 1100px; margin: 0 auto; }
-
-        /* ── Section shell ── */
         .landing-section { width: 75vw; max-width: 1100px; padding: 4rem 0 0; text-align: left; }
         .landing-section-label { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.22em; color: var(--accent2); text-transform: uppercase; margin-bottom: 1.4rem; display: flex; align-items: center; gap: 0.6rem; }
         .landing-section-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(6,182,212,0.28),transparent); }
-
-        /* ── About bento ── */
         .about-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 18px; overflow: hidden; border: 1px solid var(--border); }
         .about-cell { background: var(--surface); padding: 1.75rem; transition: background 0.22s; }
         .about-cell:hover { background: rgba(124,58,237,0.055); }
@@ -719,11 +647,8 @@ export default function Home() {
         .about-cell-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.6rem; }
         .about-cell-body { font-family: var(--font-mono); font-size: 0.88rem; color: var(--muted); line-height: 1.85; }
         .about-cell-body strong { color: var(--accent); font-weight: 500; }
-
-        /* ── Why glass cards ── */
         .why-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.7rem; }
         .why-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 15px; padding: 1.4rem 1.2rem; position: relative; overflow: hidden; opacity: 0; transform: translateY(24px); transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s, opacity 0.5s ease; }
-        .why-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(167,139,250,0.55),transparent); opacity:0; transition:opacity 0.3s; }
         .why-card.visible { opacity:1; transform:translateY(0); }
         .why-card:nth-child(2).visible { transition-delay:0.07s; }
         .why-card:nth-child(3).visible { transition-delay:0.14s; }
@@ -731,12 +656,9 @@ export default function Home() {
         .why-card:nth-child(5).visible { transition-delay:0.28s; }
         .why-card:nth-child(6).visible { transition-delay:0.35s; }
         .why-card:hover { transform:translateY(-5px); box-shadow:0 14px 44px rgba(124,58,237,0.14); border-color:rgba(167,139,250,0.4); }
-        .why-card:hover::before { opacity:1; }
         .why-card-icon  { font-size:1.8rem; display:block; margin-bottom:0.85rem; }
         .why-card-title { font-size:1rem; font-weight:700; color:var(--text); margin-bottom:0.4rem; }
         .why-card-desc  { font-family:var(--font-mono); font-size:0.82rem; color:var(--muted); line-height:1.7; }
-
-        /* ── Timeline ── */
         .tl-track { display:grid; grid-template-columns:repeat(6,1fr); gap:0; position:relative; }
         .tl-track::before { content:''; position:absolute; top:27px; left:calc(100%/12); right:calc(100%/12); height:1px; background:linear-gradient(90deg,transparent,rgba(167,139,250,0.38) 15%,rgba(6,182,212,0.38) 85%,transparent); z-index:0; }
         .tl-step { display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 0.4rem; position:relative; z-index:1; cursor:default; }
@@ -744,28 +666,15 @@ export default function Home() {
         .tl-step:hover .tl-num { background:rgba(124,58,237,0.28); border-color:var(--accent); box-shadow:0 0 22px rgba(167,139,250,0.38); transform:scale(1.12); color:#fff; }
         .tl-label { font-size:0.88rem; font-weight:700; color:var(--text); margin-bottom:0.3rem; font-family:var(--font-mono); }
         .tl-desc  { font-size:0.76rem; color:var(--muted); line-height:1.55; font-family:var(--font-mono); }
-        .tl-step:hover .tl-desc { color:var(--text); }
-
-        /* ── Tech box ── */
-        .tech-box { background:rgba(255,255,255,0.03); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--border); border-radius:16px; padding:1.75rem; display:grid; grid-template-columns:1fr 1fr; gap:1.75rem; }
-        .tech-group-label { font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.18em; color:var(--accent2); text-transform:uppercase; margin-bottom:0.8rem; }
-        .tech-chips { display:flex; flex-wrap:wrap; gap:0.45rem; }
-        .tech-chip { font-family:var(--font-mono); font-size:0.8rem; letter-spacing:0.04em; color:var(--accent); background:rgba(124,58,237,0.1); border:1px solid rgba(124,58,237,0.2); border-radius:7px; padding:0.32rem 0.85rem; white-space:nowrap; cursor:default; transition:background 0.15s,border-color 0.15s,transform 0.15s,box-shadow 0.15s; }
-        .tech-chip:hover { background:rgba(124,58,237,0.22); border-color:rgba(167,139,250,0.55); transform:scale(1.06); box-shadow:0 0 12px rgba(167,139,250,0.22); }
-
-        /* ── Footer CTA ── */
         .landing-footer-cta { text-align:center; padding:5rem 0 4rem; position:relative; width:100%; }
         .footer-glow { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:500px; height:280px; background:radial-gradient(ellipse,rgba(124,58,237,0.12),transparent 70%); pointer-events:none; }
         .footer-cta-title { font-size:clamp(2rem,4vw,3rem); font-weight:800; letter-spacing:-0.03em; margin-bottom:0.8rem; line-height:1.1; position:relative; }
         .footer-cta-sub { font-family:var(--font-mono); font-size:0.9rem; color:var(--muted); margin-bottom:2.2rem; position:relative; }
         .landing-footer-bottom { font-family:var(--font-mono); font-size:0.7rem; color:var(--muted); letter-spacing:0.06em; padding:1.5rem 0 2rem; border-top:1px solid var(--border); width:100%; text-align:center; }
-
-        /* ── Responsive ── */
         @media (max-width:720px) {
           .about-bento { grid-template-columns:1fr; } .about-cell.wide { grid-column:1; }
           .why-grid { grid-template-columns:1fr 1fr; }
           .tl-track { grid-template-columns:repeat(3,1fr); row-gap:1.5rem; } .tl-track::before { display:none; }
-          .tech-box { grid-template-columns:1fr; gap:1.4rem; }
         }
         @media (max-width:480px) {
           .why-grid { grid-template-columns:1fr; }
@@ -778,11 +687,7 @@ export default function Home() {
         .chat-msg { padding: 0.5rem 0.75rem; border-radius: 8px; max-width: 80%; }
         .chat-msg.mine  { align-self: flex-end; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.25); }
         .chat-msg.other { align-self: flex-start; background: var(--border); border: 1px solid var(--border); }
-        .chat-msg.system {
-          align-self: center; max-width: 95%; width: 100%;
-          background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.2);
-          text-align: center; border-radius: 8px;
-        }
+        .chat-msg.system { align-self: center; max-width: 95%; width: 100%; background: rgba(6,182,212,0.06); border: 1px solid rgba(6,182,212,0.2); text-align: center; border-radius: 8px; }
         .chat-meta { font-size: 0.6rem; font-family: var(--font-mono); color: var(--muted); margin-bottom: 0.2rem; }
         .chat-text { font-size: 0.8rem; color: var(--text); word-break: break-word; }
         .chat-text.system-text { color: var(--accent2); font-size: 0.75rem; font-family: var(--font-mono); }
@@ -800,7 +705,6 @@ export default function Home() {
         }
       `}</style>
 
-      {/* ── Navbar ── */}
       <nav className="navbar">
         <div className="nav-left">
           {isConnected ? (
@@ -813,29 +717,15 @@ export default function Home() {
           )}
           {isConnected && (
             <>
-              <button
-                className="nav-btn"
-                onClick={() => router.push('/my-contracts')}
-              >
+              <button className="nav-btn" onClick={() => router.push('/my-contracts')}>
                 My Contracts {myContracts.length > 0 && `(${myContracts.length})`}
               </button>
-
-              {/*
-                ── Deploy / Join: hidden while a contract is active ──
-                   Only shown when: no contract loaded, OR contract is done
-              */}
               {showDeployJoinNav && (
                 <>
-                  <button
-                    className={`nav-btn ${navPanel === 'deploy' ? 'active' : ''}`}
-                    onClick={() => setNavPanel(v => v === 'deploy' ? null : 'deploy')}
-                  >
+                  <button className={`nav-btn ${navPanel === 'deploy' ? 'active' : ''}`} onClick={() => setNavPanel(v => v === 'deploy' ? null : 'deploy')}>
                     + New Contract
                   </button>
-                  <button
-                    className={`nav-btn ${navPanel === 'join' ? 'active' : ''}`}
-                    onClick={() => setNavPanel(v => v === 'join' ? null : 'join')}
-                  >
+                  <button className={`nav-btn ${navPanel === 'join' ? 'active' : ''}`} onClick={() => setNavPanel(v => v === 'join' ? null : 'join')}>
                     Join Contract
                   </button>
                 </>
@@ -844,19 +734,12 @@ export default function Home() {
           )}
         </div>
         <div style={{display:'flex', alignItems:'center', gap:'0.25rem'}}>
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
+          <button className="theme-toggle" onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
             {isDark ? '☀️' : '🌙'}
           </button>
           {isConnected && <ConnectButton chainStatus="icon" showBalance={false} />}
         </div>
       </nav>
-
-      {/* ── Nav Panels ── */}
-      {/* My Contracts panel đã chuyển sang full-page view bên dưới */}
 
       {navPanel === 'deploy' && (
         <div className="nav-panel">
@@ -864,7 +747,6 @@ export default function Home() {
             <div className="panel-title">Deploy New Contract</div>
             <input className="input" placeholder="Item description (e.g. iPhone 15 Pro 256GB)" value={deployDesc} onChange={e => setDeployDesc(e.target.value)} />
             <input className="input" placeholder="Item price in ETH (e.g. 0.005)" value={deployPrice} onChange={e => setDeployPrice(e.target.value)} />
-
             {deployPrice && !isNaN(parseFloat(deployPrice)) && parseFloat(deployPrice) > 0 && (
               <div className="deploy-note">
                 You send <strong>{(parseFloat(deployPrice) / 5).toFixed(6)} ETH</strong> deposit (20%).
@@ -893,18 +775,14 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── Main ── */}
       <div className="app">
         {!isConnected ? (
           <div className="connect-prompt">
-            {/* Animated background orbs */}
             <div className="landing-orbs">
               <div className="orb orb-1" />
               <div className="orb orb-2" />
               <div className="orb orb-3" />
             </div>
-
-            {/* Hero */}
             <div className="connect-eyebrow">
               <span className="eyebrow-line" />
               Trustless · On-chain · Permissionless
@@ -920,8 +798,6 @@ export default function Home() {
             <div className="connect-cta">
               <ConnectButton label="Connect Wallet to Start" />
             </div>
-
-            {/* Sections */}
             <LandingCards />
           </div>
 
@@ -944,7 +820,6 @@ export default function Home() {
 
             {txStatus && <div className="status-bar">{txStatus}</div>}
 
-            {/* Contract Info */}
             <div className="card">
               <div className="card-title">Contract Info</div>
               <div className="info-row">
@@ -955,15 +830,11 @@ export default function Home() {
               <div className="info-row"><span className="info-label">Item Price</span><span className="info-value">{fmt(itemPrice)}</span></div>
               <div className="info-row"><span className="info-label">Deposit (20%)</span><span className="info-value">{fmt(deposit)}</span></div>
               <div className="info-row"><span className="info-label">Pool Balance</span><span className="info-value">{fmt(balance)}</span></div>
-
               {isSeller && stateNum === STATE.AWAITING_BUYER && (
-                <>
-                  <div className="share-row">
-                    <input className="share-input" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}?contract=${contractAddress}`} />
-                    <button className="btn btn-secondary" onClick={handleCopyLink}>{copied ? '✓ Copied!' : '📋 Copy Link for Buyer'}</button>
-                  </div>
-
-                </>
+                <div className="share-row">
+                  <input className="share-input" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}?contract=${contractAddress}`} />
+                  <button className="btn btn-secondary" onClick={handleCopyLink}>{copied ? '✓ Copied!' : '📋 Copy Link for Buyer'}</button>
+                </div>
               )}
               {stateNum === STATE.AWAITING_BUYER && createdAt && (
                 <div className="timeout-bar"><span>Cancel available in</span><span>{countdown(BigInt(createdAt) + BigInt(86400))}</span></div>
@@ -979,7 +850,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Participants */}
             <div className="card">
               <div className="card-title">Participants</div>
               <div className="info-row">
@@ -998,11 +868,9 @@ export default function Home() {
               )}
             </div>
 
-            {/* Actions */}
             <div className="card">
               <div className="card-title">Actions</div>
 
-              {/* ── AWAITING BUYER: buyer joins ── */}
               {stateNum === STATE.AWAITING_BUYER && !isSeller && (
                 <>
                   <input className="input" placeholder="Your delivery address" value={addressHash} onChange={e => setAddressHash(e.target.value)} />
@@ -1014,7 +882,6 @@ export default function Home() {
                 </>
               )}
 
-              {/* ── AWAITING BUYER: seller cancel after 24h ── */}
               {stateNum === STATE.AWAITING_BUYER && isSeller && (() => {
                 const cancelAvailableTs = createdAt ? Number(createdAt) + 86400 : null;
                 const cancelReady = cancelAvailableTs ? isCountdownExpired(cancelAvailableTs) : false;
@@ -1023,16 +890,10 @@ export default function Home() {
                   <div className="actions single">
                     {!cancelReady && cancelCd && (
                       <div className="timeout-bar" style={{marginBottom:'0.5rem'}}>
-                        <span>🔒 Cancel available in</span>
-                        <span>{cancelCd}</span>
+                        <span>🔒 Cancel available in</span><span>{cancelCd}</span>
                       </div>
                     )}
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => tx('cancelAfter24h', [], null, '🚫 Seller cancelled the escrow before a buyer joined. Deposit has been refunded.')}
-                      disabled={isLoading || !cancelReady}
-                      title={cancelReady ? 'Cancel and refund deposit' : `Available in ${cancelCd}`}
-                    >
+                    <button className="btn btn-secondary" onClick={() => tx('cancelAfter24h', [], null, '🚫 Seller cancelled the escrow before a buyer joined. Deposit has been refunded.')} disabled={isLoading || !cancelReady}>
                       <span className="btn-label">{isLoading && <span className="spinner" />}Cancel & Refund</span>
                       {!cancelReady && cancelCd && <span className="btn-sub">Locked — {cancelCd} remaining</span>}
                     </button>
@@ -1040,52 +901,29 @@ export default function Home() {
                 );
               })()}
 
-              {/* ── ACTIVE: Auto-cancel sau 72h seller không hành động ── */}
               {stateNum === STATE.ACTIVE && !shipped && (isBuyer || isSeller) && autoCancelReady && (
                 <div className="actions single" style={{marginBottom:'0.5rem'}}>
-                  <button className="btn btn-danger" onClick={() => tx('requestCancel', [], null, '🚫 Contract tự hủy: seller không có hành động sau 72h. Cả hai nhận lại tiền.')} disabled={isLoading}>
+                  <button className="btn btn-danger" onClick={() => tx('requestCancel', [], null, '🚫 Auto-cancel triggered.')} disabled={isLoading}>
                     <span className="btn-label">{isLoading && <span className="spinner" />}🚫 Auto-Cancel (seller inactive 72h)</span>
                   </button>
                 </div>
               )}
-              {stateNum === STATE.ACTIVE && !shipped && (isBuyer || isSeller) && !autoCancelReady && autoCancelCountdown && (
-                <div className="no-role" style={{fontSize:'0.7rem', padding:'0.5rem', background:'rgba(249,115,22,0.06)', borderRadius:'8px', border:'1px solid rgba(249,115,22,0.15)', color:'var(--warn)', marginBottom:'0.5rem'}}>
-                  ⏳ Auto-cancel available in <strong>{autoCancelCountdown}</strong> if seller hasn't shipped
-                </div>
-              )}
 
-              {/*
-                ── ACTIVE: BUYER ──
-                Before shipped → Cancel only (Confirm + Return hidden)
-                After shipped  → Confirm + Return (Cancel hidden)
-              */}
               {stateNum === STATE.ACTIVE && isBuyer && (
                 <>
-                  {/* Before shipped: only Cancel */}
                   {!shipped && (
                     <div className="actions single">
-                      <button className="btn btn-danger" onClick={() => tx('requestCancel', [], null, '✕ Buyer has requested to cancel this transaction. Seller please respond.')} disabled={isLoading}>
+                      <button className="btn btn-danger" onClick={() => tx('requestCancel', [], null, '✕ Buyer has requested to cancel this transaction.')} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}✕ Cancel</span>
                       </button>
                     </div>
                   )}
-                  {/* Confirm + Return — available immediately after shipped */}
                   <div className="actions" style={{gridTemplateColumns: '1fr 1fr'}}>
-                    <button
-                      className={`btn ${shipped ? 'btn-success' : 'btn-claim-locked'}`}
-                      onClick={shipped ? () => tx('confirmDelivery', [], null, '✅ Buyer has confirmed delivery. The escrow is now complete and funds have been released to the seller.') : undefined}
-                      disabled={isLoading || !shipped}
-                      title={shipped ? 'Confirm delivery' : 'Waiting for seller to ship'}
-                    >
+                    <button className={`btn ${shipped ? 'btn-success' : 'btn-claim-locked'}`} onClick={shipped ? () => tx('confirmDelivery', [], null, '✅ Buyer has confirmed delivery.') : undefined} disabled={isLoading || !shipped}>
                       <span className="btn-label">{isLoading && shipped && <span className="spinner" />}✓ Confirm</span>
                       {!shipped && <span className="btn-sub">Awaiting shipment</span>}
                     </button>
-                    <button
-                      className={`btn ${shipped ? 'btn-warn' : 'btn-claim-locked'}`}
-                      onClick={shipped ? () => tx('requestReturn', ['evidence'], null, '↩ Buyer has requested a return. Seller please respond.') : undefined}
-                      disabled={isLoading || !shipped}
-                      title={shipped ? 'Request return' : 'Waiting for seller to ship'}
-                    >
+                    <button className={`btn ${shipped ? 'btn-warn' : 'btn-claim-locked'}`} onClick={shipped ? () => tx('requestReturn', ['evidence'], null, '↩ Buyer has requested a return.') : undefined} disabled={isLoading || !shipped}>
                       <span className="btn-label">{isLoading && shipped && <span className="spinner" />}↩ Return</span>
                       {!shipped && <span className="btn-sub">Awaiting shipment</span>}
                     </button>
@@ -1093,67 +931,37 @@ export default function Home() {
                 </>
               )}
 
-              {/*
-                ── ACTIVE: SELLER ──
-                Before shipped → [Mark as Shipped] [Cancel]
-                After shipped  → [Shipped ✓ done] [Claim — locked until timer]
-                Cancel disappears after shipping.
-                Claim is dimmed and unclickable until claimReady === true.
-              */}
               {stateNum === STATE.ACTIVE && isSeller && (
                 <div className="actions" style={{gridTemplateColumns: '1fr 1fr'}}>
-                  {/* Shipped */}
-                  <button
-                    className={`btn btn-shipped ${shipped ? 'done' : ''}`}
-                    onClick={shipped ? undefined : handleShipped}
-                    disabled={shipped}
-                  >
+                  <button className={`btn btn-shipped ${shipped ? 'done' : ''}`} onClick={shipped ? undefined : handleShipped} disabled={shipped}>
                     <span className="btn-label">📦 {shipped ? 'Shipped ✓' : 'Mark as Shipped'}</span>
-                    {shipped && shippedAt && (
-                      <span className="btn-sub">{fmtDateTime({toDate: () => new Date(shippedAt * 1000)})}</span>
-                    )}
+                    {shipped && shippedAt && <span className="btn-sub">{fmtDateTime({toDate: () => new Date(shippedAt * 1000)})}</span>}
                   </button>
-
-                  {/* Before shipped: Cancel */}
                   {!shipped && (
-                    <button className="btn btn-danger" onClick={() => tx('requestCancel', [], null, '✕ Seller has requested to cancel this transaction. Buyer please respond.')} disabled={isLoading}>
+                    <button className="btn btn-danger" onClick={() => tx('requestCancel', [], null, '✕ Seller has requested to cancel.')} disabled={isLoading}>
                       <span className="btn-label">{isLoading && <span className="spinner" />}✕ Cancel</span>
                     </button>
                   )}
-
-                  {/* After shipped: Claim (locked until timer expires) */}
                   {shipped && (
-                    <button
-                      className={`btn ${claimReady ? 'btn-secondary' : 'btn-claim-locked'}`}
-                      onClick={claimReady ? () => tx('claimAfterBuyerTimeout', [], null, '⏰ Seller has claimed funds after buyer timeout.') : undefined}
-                      disabled={isLoading || !claimReady}
-                      title={claimReady ? 'Claim funds now' : `Locked — available in ${claimCountdown}`}
-                    >
+                    <button className={`btn ${claimReady ? 'btn-secondary' : 'btn-claim-locked'}`} onClick={claimReady ? () => tx('claimAfterBuyerTimeout', [], null, '⏰ Seller claimed funds after buyer timeout.') : undefined} disabled={isLoading || !claimReady}>
                       <span className="btn-label">{isLoading && claimReady && <span className="spinner" />}⏰ Claim</span>
-                      {!claimReady && claimCountdown
-                        ? <span className="btn-sub">{claimCountdown} remaining</span>
-                        : <span className="btn-sub">Available now</span>
-                      }
+                      {!claimReady && claimCountdown ? <span className="btn-sub">{claimCountdown} remaining</span> : <span className="btn-sub">Available now</span>}
                     </button>
                   )}
                 </div>
               )}
 
-              {/* ── CANCEL REQUESTED ── */}
               {stateNum === STATE.CANCEL_REQUESTED && (
                 <>
-                  <div className="evidence-notice">
-                    ✕ Cancel requested by {isInitiator ? 'you' : short(requestInitiator)}.
-                    {isInitiator ? ' Waiting for the other party to approve.' : ' Do you agree to cancel?'}
-                  </div>
+                  <div className="evidence-notice">✕ Cancel requested by {isInitiator ? 'you' : short(requestInitiator)}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree to cancel?'}</div>
                   <div className="actions">
                     {!isInitiator && (
-                      <button className="btn btn-danger" onClick={() => tx('approveCancel', [], null, '✅ Cancel request approved. The escrow has been cancelled and funds returned.')} disabled={isLoading}>
+                      <button className="btn btn-danger" onClick={() => tx('approveCancel', [], null, '✅ Cancel approved.')} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}✓ Approve Cancel</span>
                       </button>
                     )}
                     {isInitiator && (
-                      <button className="btn btn-secondary" onClick={() => tx('withdrawCancelRequest', [], null, '↩ Cancel request has been withdrawn. The escrow is back to active.')} disabled={isLoading}>
+                      <button className="btn btn-secondary" onClick={() => tx('withdrawCancelRequest', [], null, '↩ Cancel request withdrawn.')} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}↩ Withdraw Request</span>
                       </button>
                     )}
@@ -1161,21 +969,17 @@ export default function Home() {
                 </>
               )}
 
-              {/* ── RETURN REQUESTED ── */}
               {stateNum === STATE.RETURN_REQUESTED && (
                 <>
-                  <div className="evidence-notice">
-                    ↩ Return requested by {isInitiator ? 'you' : short(requestInitiator)}.
-                    {isInitiator ? ' Waiting for the other party.' : ' Do you agree to accept the return?'}
-                  </div>
-                  <div className="actions single" style={{display:'flex', justifyContent:'center'}}>
+                  <div className="evidence-notice">↩ Return requested by {isInitiator ? 'you' : short(requestInitiator)}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree?'}</div>
+                  <div className="actions single">
                     {!isInitiator && (
-                      <button className="btn btn-warn" style={{width:'100%'}} onClick={() => tx('approveReturn', [], null, '✅ Return approved. Funds have been returned to the buyer.')} disabled={isLoading}>
+                      <button className="btn btn-warn" style={{width:'100%'}} onClick={() => tx('approveReturn', [], null, '✅ Return approved.')} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}✓ Approve Return</span>
                       </button>
                     )}
                     {isInitiator && (
-                      <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => tx('withdrawReturnRequest', [], null, '↩ Buyer has withdrawn the return request. The escrow is back to active.')} disabled={isLoading}>
+                      <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => tx('withdrawReturnRequest', [], null, '↩ Return request withdrawn.')} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}↩ Withdraw Request</span>
                       </button>
                     )}
@@ -1183,31 +987,26 @@ export default function Home() {
                 </>
               )}
 
-              {/* ── DONE ── */}
               {stateNum === STATE.COMPLETED && (
-                <div className="no-role">
-                  ✅ Escrow completed successfully.
-                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700}}>💰 Transaction complete — funds have been released to your wallet.</div>}
-                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--accent2)',fontWeight:700}}>📦 Delivery confirmed. Thank you for using EscrowMAD!</div>}
+                <div className="no-role">✅ Escrow completed.
+                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700}}>💰 Funds released to your wallet.</div>}
+                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--accent2)',fontWeight:700}}>📦 Delivery confirmed. Thank you!</div>}
                 </div>
               )}
               {stateNum === STATE.CANCELLED && (
-                <div className="no-role">
-                  🚫 Escrow was cancelled.
-                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--muted)',fontWeight:700}}>Your deposit has been returned to your wallet.</div>}
-                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--muted)',fontWeight:700}}>Your payment has been refunded to your wallet.</div>}
+                <div className="no-role">🚫 Escrow cancelled.
+                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--muted)',fontWeight:700}}>Deposit returned.</div>}
+                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--muted)',fontWeight:700}}>Payment refunded.</div>}
                 </div>
               )}
               {stateNum === STATE.SELLER_CLAIMED && (
-                <div className="no-role">
-                  ⏰ Buyer timeout.
-                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700}}>💰 Buyer was unresponsive — funds have been released to your wallet.</div>}
-                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--danger)',fontWeight:700}}>⚠️ You failed to respond in time. Funds have been claimed by the seller.</div>}
+                <div className="no-role">⏰ Buyer timeout.
+                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700}}>💰 Funds released to your wallet.</div>}
+                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--danger)',fontWeight:700}}>⚠️ Funds claimed by the seller.</div>}
                 </div>
               )}
             </div>
 
-            {/* Chat */}
             {(isBuyer || isSeller || stateNum === STATE.AWAITING_BUYER) && stateNum !== null && (
               <div className="card">
                 <div className="card-title">Chat</div>
@@ -1218,16 +1017,8 @@ export default function Home() {
                     const mine = !isSystem && address && m.sender?.toLowerCase() === address.toLowerCase();
                     return (
                       <div key={m.id} className={`chat-msg ${isSystem ? 'system' : mine ? 'mine' : 'other'}`}>
-                        {!isSystem && (
-                          <div className="chat-meta">
-                            {mine ? 'You' : short(m.sender)} · {fmtDateTime(m.timestamp)}
-                          </div>
-                        )}
-                        {isSystem && (
-                          <div className="chat-meta" style={{textAlign:'center'}}>
-                            🔔 System · {fmtDateTime(m.timestamp)}
-                          </div>
-                        )}
+                        {!isSystem && <div className="chat-meta">{mine ? 'You' : short(m.sender)} · {fmtDateTime(m.timestamp)}</div>}
+                        {isSystem && <div className="chat-meta" style={{textAlign:'center'}}>🔔 System · {fmtDateTime(m.timestamp)}</div>}
                         {m.type === 'image'
                           ? <img src={m.message} alt="shared" className="chat-img" onClick={() => window.open(m.message, '_blank')} />
                           : <div className={`chat-text ${isSystem ? 'system-text' : ''}`}>{m.message}</div>
@@ -1240,7 +1031,7 @@ export default function Home() {
                 <div className="chat-input-row">
                   <input className="input" placeholder="Type a message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
                   <input ref={chatImgRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleChatImage} />
-                  <button className="btn-icon" onClick={() => chatImgRef.current?.click()} disabled={uploadingChat} title="Send image">
+                  <button className="btn-icon" onClick={() => chatImgRef.current?.click()} disabled={uploadingChat}>
                     {uploadingChat ? <span className="spinner" style={{borderTopColor:'var(--muted)'}} /> : '🖼️'}
                   </button>
                   <button className="btn btn-primary" style={{flexDirection:'row', padding:'0.7rem 1.1rem'}} onClick={handleSendMessage} disabled={!chatInput.trim() || !address}>Send</button>
@@ -1255,5 +1046,13 @@ export default function Home() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeInner />
+    </Suspense>
   );
 }
