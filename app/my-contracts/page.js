@@ -6,7 +6,8 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, usePublicClient } from 'wagmi';
 
 const GET_STATE_ABI = [
-  { inputs: [], name: 'getState', outputs: [{ type: 'uint8' }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: 'getState',        outputs: [{ type: 'uint8'  }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: 'itemDescription', outputs: [{ type: 'string' }], stateMutability: 'view', type: 'function' },
 ];
 
 const STATE_INFO = {
@@ -40,6 +41,7 @@ export default function MyContractsPage() {
   const publicClient = usePublicClient();
   const [contracts, setContracts] = useState([]);
   const [contractStates, setContractStates] = useState({});
+  const [contractDescriptions, setContractDescriptions] = useState({});
 
   useEffect(() => {
     if (!publicClient || contracts.length === 0) return;
@@ -58,6 +60,26 @@ export default function MyContractsPage() {
       setContractStates(results);
     };
     fetchStates();
+  }, [publicClient, contracts]);
+
+  useEffect(() => {
+    if (!publicClient || contracts.length === 0) return;
+    const fetchDescriptions = async () => {
+      const results = {};
+      await Promise.all(contracts.map(async (c) => {
+        if (c.description) return;
+        try {
+          const desc = await publicClient.readContract({
+            address: c.addr,
+            abi: GET_STATE_ABI,
+            functionName: 'itemDescription',
+          });
+          results[c.addr] = desc;
+        } catch { results[c.addr] = ''; }
+      }));
+      if (Object.keys(results).length > 0) setContractDescriptions(prev => ({ ...prev, ...results }));
+    };
+    fetchDescriptions();
   }, [publicClient, contracts]);
   const [inputAddr, setInputAddr] = useState('');
   const [isDark, setIsDark] = useState(true);
@@ -337,7 +359,7 @@ export default function MyContractsPage() {
             {contracts.map((c, i) => (
               <div key={i} className="contract-card" onClick={() => handleOpen(c.addr)}>
                 <div className="card-top">
-                  <div className="card-desc">{c.description || 'Unnamed contract'}</div>
+                  <div className="card-desc">{contractDescriptions[c.addr] || c.description || 'Unnamed contract'}</div>
                   <div className="card-arrow">→</div>
                 </div>
                 <div className="card-meta">

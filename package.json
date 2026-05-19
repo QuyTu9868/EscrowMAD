@@ -9,14 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@emailjs/browser": "^4.4.1",
+    "@rainbow-me/rainbowkit": "^2.1.7",
     "@tanstack/react-query": "^5.100.5",
     "firebase": "^12.12.1",
-    "next": "16.2.4",
+    "next": "^15.1.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "viem": "^2.48.4",
-    "wagmi": "^3.6.5"
+    "wagmi": "^2.13.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
