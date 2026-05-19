@@ -17,7 +17,7 @@ const config = getDefaultConfig({
   transports: {
     [sepolia.id]: http('https://eth-sepolia.g.alchemy.com/v2/oMfhl_VEAr9EQK9-UBrHy'),
   },
-  ssr: true,
+  ssr: false,
   multiInjectedProviderDiscovery: true,
 });
 
