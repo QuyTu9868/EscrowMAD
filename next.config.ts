@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ['encoding', 'pino-pretty', '@firebase/firestore', 'firebase'],
   webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'idb-keyval': false,
+      };
+    }
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
