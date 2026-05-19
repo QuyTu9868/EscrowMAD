@@ -7,15 +7,17 @@ import {
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import { sepolia } from 'wagmi/chains';
+import { http } from 'wagmi';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 
 const config = getDefaultConfig({
   appName: 'EscrowMAD',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'escrowmad-demo',
   chains: [sepolia],
+  transports: {
+    [sepolia.id]: http('https://eth-sepolia.g.alchemy.com/v2/oMfhl_VEAr9EQK9-UBrHy'),
+  },
   ssr: true,
-  // ← thêm dòng này — bật EIP-6963
-  // cho phép nhiều ví cùng tồn tại không tranh nhau
   multiInjectedProviderDiscovery: true,
 });
 
