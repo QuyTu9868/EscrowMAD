@@ -10,20 +10,28 @@ import { sepolia } from 'wagmi/chains';
 import { http } from 'wagmi';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 
-const config = getDefaultConfig({
-  appName: 'EscrowMAD',
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'escrowmad-demo',
-  chains: [sepolia],
-  transports: {
-    [sepolia.id]: http('https://eth-sepolia.g.alchemy.com/v2/oMfhl_VEAr9EQK9-UBrHy'),
-  },
-  ssr: false,
-  multiInjectedProviderDiscovery: true,
-});
+let config;
+let queryClient;
 
-const queryClient = new QueryClient();
+function getConfig() {
+  if (!config) {
+    config = getDefaultConfig({
+      appName: 'EscrowMAD',
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'escrowmad-demo',
+      chains: [sepolia],
+      transports: {
+        [sepolia.id]: http('https://eth-sepolia.g.alchemy.com/v2/oMfhl_VEAr9EQK9-UBrHy'),
+      },
+      ssr: false,
+      multiInjectedProviderDiscovery: true,
+    });
+    queryClient = new QueryClient();
+  }
+  return { config, queryClient };
+}
 
 export function Providers({ children }) {
+  const { config, queryClient } = getConfig();
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
