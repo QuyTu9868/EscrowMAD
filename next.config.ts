@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  serverExternalPackages: ['encoding', 'pino-pretty'],
+  serverExternalPackages: ['encoding', 'pino-pretty', '@firebase/firestore', 'firebase'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -15,9 +15,6 @@ const nextConfig: NextConfig = {
         tls: false,
         fs: false,
       };
-    }
-    if (isServer) {
-      config.externals = [...(config.externals || []), 'firebase', 'firebase/app', 'firebase/firestore'];
     }
     return config;
   },
