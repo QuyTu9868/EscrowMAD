@@ -270,8 +270,10 @@ function HomeInner() {
     const c = searchParams.get('contract');
     if (c && c.startsWith('0x')) { setContractAddr(c); saveContract(c); }
     setMyContracts(loadSavedContracts());
+    const p = searchParams.get('panel');
+    if (p === 'deploy' || p === 'join') setNavPanel(p);
   }, [searchParams]);
-
+  
   useEffect(() => {
     if (!contractAddress) return;
     const key = shippedKey(contractAddress);
