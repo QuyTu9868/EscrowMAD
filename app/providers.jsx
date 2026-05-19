@@ -1,5 +1,9 @@
 'use client';
 
+if (typeof globalThis.indexedDB === 'undefined') globalThis.indexedDB = {};
+if (typeof globalThis.localStorage === 'undefined') globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {} };
+if (typeof globalThis.sessionStorage === 'undefined') globalThis.sessionStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {} };
+
 import '@rainbow-me/rainbowkit/styles.css';
 import {
   getDefaultConfig,
