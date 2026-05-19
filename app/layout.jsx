@@ -1,6 +1,8 @@
-import { Providers } from './providers';
+import dynamic from 'next/dynamic';
 import { Space_Mono, Syne } from 'next/font/google';
 import './globals.css';
+
+const Providers = dynamic(() => import('./providers').then(mod => mod.Providers), { ssr: false });
 
 const spaceMono = Space_Mono({
   subsets: ['latin'],
