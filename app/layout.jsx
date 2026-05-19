@@ -1,3 +1,5 @@
+'use client';
+
 import dynamic from 'next/dynamic';
 import { Space_Mono, Syne } from 'next/font/google';
 import './globals.css';
@@ -15,11 +17,6 @@ const syne = Syne({
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-syne',
 });
-
-export const metadata = {
-  title: 'EscrowMAD',
-  description: 'Decentralized Escrow on Sepolia',
-};
 
 export default function RootLayout({ children }) {
   return (
