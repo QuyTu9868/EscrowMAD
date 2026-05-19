@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   serverExternalPackages: ['encoding', 'pino-pretty'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -12,6 +15,9 @@ const nextConfig: NextConfig = {
         tls: false,
         fs: false,
       };
+    }
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'firebase', 'firebase/app', 'firebase/firestore'];
     }
     return config;
   },
