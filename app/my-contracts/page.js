@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, usePublicClient } from 'wagmi';
+import DemoContracts from './DemoContracts';
 
 const GET_STATE_ABI = [
   { inputs: [], name: 'getState',        outputs: [{ type: 'uint8'  }], stateMutability: 'view', type: 'function' },
@@ -37,7 +38,7 @@ const NAVBAR_H = 64;
 
 export default function MyContractsPage() {
   const router = useRouter();
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const publicClient = usePublicClient();
   const [contracts, setContracts] = useState([]);
   const [contractStates, setContractStates] = useState({});
@@ -194,7 +195,7 @@ export default function MyContractsPage() {
             <img src="/logo.png" alt="EscrowMAD" style={{width:'32px', height:'32px', objectFit:'contain', borderRadius:'6px'}} />
             <div className="logo">EscrowMAD</div>
           </div>
-          <button className="nav-btn active">My Contracts</button>
+          <button className="nav-btn active">Profile</button>
           <button className="nav-btn" onClick={() => router.push('/?panel=deploy')}>+ New Contract</button>
           <button className="nav-btn" onClick={() => router.push('/?panel=join')}>Join Contract</button>
         </div>
@@ -210,7 +211,7 @@ export default function MyContractsPage() {
         <button className="back-btn" onClick={() => router.push('/')}>← Back</button>
 
         <div className="page-header">
-          <div className="page-title">My Contracts</div>
+          <div className="page-title">Profile</div>
           <div className="page-sub">{contracts.length} saved contract{contracts.length !== 1 ? 's' : ''} on this device</div>
         </div>
 
@@ -270,6 +271,7 @@ export default function MyContractsPage() {
                 </div>
               </div>
             ))}
+            <DemoContracts walletAddress={address} />
           </div>
         )}
       </div>
