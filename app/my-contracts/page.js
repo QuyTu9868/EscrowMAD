@@ -9,6 +9,7 @@ import DemoContracts from './DemoContracts';
 const GET_STATE_ABI = [
   { inputs: [], name: 'getState',        outputs: [{ type: 'uint8'  }], stateMutability: 'view', type: 'function' },
   { inputs: [], name: 'itemDescription', outputs: [{ type: 'string' }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: 'itemImageHash',   outputs: [{ type: 'string' }], stateMutability: 'view', type: 'function' },
 ];
 
 const STATE_INFO = {
@@ -43,6 +44,7 @@ export default function MyContractsPage() {
   const [contracts, setContracts] = useState([]);
   const [contractStates, setContractStates] = useState({});
   const [contractDescriptions, setContractDescriptions] = useState({});
+  const [contractImages, setContractImages] = useState({});
 
   useEffect(() => {
     if (!publicClient || contracts.length === 0) return;
@@ -73,6 +75,21 @@ export default function MyContractsPage() {
       if (Object.keys(results).length > 0) setContractDescriptions(prev => ({ ...prev, ...results }));
     };
     fetchDescriptions();
+  }, [publicClient, contracts]);
+
+  useEffect(() => {
+    if (!publicClient || contracts.length === 0) return;
+    const fetchImages = async () => {
+      const results = {};
+      await Promise.all(contracts.map(async (c) => {
+        try {
+          const hash = await publicClient.readContract({ address: c.addr, abi: GET_STATE_ABI, functionName: 'itemImageHash' });
+          results[c.addr] = hash;
+        } catch { results[c.addr] = ''; }
+      }));
+      if (Object.keys(results).length > 0) setContractImages(prev => ({ ...prev, ...results }));
+    };
+    fetchImages();
   }, [publicClient, contracts]);
 
   const [inputAddr, setInputAddr] = useState('');
@@ -123,57 +140,58 @@ export default function MyContractsPage() {
     <div className={isDark ? 'theme-dark' : 'theme-light'} style={{minHeight:'100vh'}}>
       <style>{`
         :root {
-          --font-mono: monospace;
+          --font-mono: var(--font-mono, 'Space Mono', monospace);
+          --font-display: var(--font-syne, 'Syne', sans-serif);
           --navbar-h: ${NAVBAR_H}px;
           --accent: #7c3aed; --accent2: #06b6d4;
           --danger: #ef4444; --success: #22c55e;
         }
-        .theme-dark { --bg: #0a0a0f; --surface: #111118; --border: #1e1e2e; --text: #e2e2f0; --muted: #5a5a7a; --navbar-bg: rgba(10,10,15,0.95); --grid-color: #1e1e2e; --grid-opacity: 0.35; --input-bg: #0a0a0f; background: #0a0a0f; color: #e2e2f0; }
-        .theme-light { --bg: #f0f4ff; --surface: #ffffff; --border: #dde3f0; --text: #1a1a2e; --muted: #6b7280; --navbar-bg: rgba(240,244,255,0.95); --grid-color: #c7d0e8; --grid-opacity: 0.6; --input-bg: #f8faff; background: #f0f4ff; color: #1a1a2e; }
+        .theme-dark { --bg: #0a0a0f; --surface: #0e0e15; --surface-2: #131320; --border: #1c1c28; --text: #e7e7f2; --muted: #6b6b8a; --navbar-bg: rgba(8,8,12,0.92); --grid-color: #16161f; --grid-opacity: 0.5; --input-bg: #0a0a0f; background: #0a0a0f; color: #e7e7f2; }
+        .theme-light { --bg: #f6f7fb; --surface: #ffffff; --surface-2: #fbfbfe; --border: #e3e6ef; --text: #15161f; --muted: #6b7280; --navbar-bg: rgba(246,247,251,0.92); --grid-color: #e8eaf2; --grid-opacity: 0.7; --input-bg: #fbfbfe; background: #f6f7fb; color: #15161f; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: transparent; color: var(--text); font-family: sans-serif; min-height: 100vh; transition: background 0.25s, color 0.25s; }
-        .theme-dark::before, .theme-light::before { content: ''; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 40px 40px; opacity: var(--grid-opacity); z-index: -1; }
-        .theme-toggle { background: transparent; border: none; cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 0.25rem 0.4rem; border-radius: 50%; transition: transform 0.2s; display: flex; align-items: center; }
-        .theme-toggle:hover { transform: scale(1.2); }
-        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: var(--navbar-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; height: var(--navbar-h); width: 100%; }
-        .nav-left { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
-        .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; background: linear-gradient(135deg, #a78bfa, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-right: 1.5rem; white-space: nowrap; }
-        .nav-btn { background: transparent; border: 1px solid transparent; padding: 0.5rem 1.2rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; border-radius: 8px; transition: all 0.15s; white-space: nowrap; }
-        .nav-btn:hover { color: var(--text); background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.2); }
-        .nav-btn.active { color: #a78bfa; background: rgba(124,58,237,0.12); border-color: rgba(124,58,237,0.3); }
+        body { background: transparent; color: var(--text); font-family: var(--font-display); min-height: 100vh; transition: background 0.25s, color 0.25s; -webkit-font-smoothing: antialiased; }
+        .theme-dark::before, .theme-light::before { content: ''; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 44px 44px; opacity: var(--grid-opacity); z-index: -1; }
+        .theme-toggle { background: transparent; border: none; cursor: pointer; font-size: 1.15rem; line-height: 1; padding: 0.4rem; border-radius: 8px; transition: background 0.15s; display: flex; align-items: center; }
+        .theme-toggle:hover { background: rgba(124,58,237,0.08); }
+        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: var(--navbar-bg); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; height: var(--navbar-h); width: 100%; }
+        .nav-left { display: flex; align-items: center; gap: 0.35rem; flex: 1; }
+        .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; font-family: var(--font-display); background: linear-gradient(135deg, #b9a4ff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-right: 1.25rem; white-space: nowrap; }
+        .nav-btn { background: transparent; border: 1px solid transparent; padding: 0.45rem 0.95rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; border-radius: 7px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+        .nav-btn:hover { color: var(--text); background: rgba(124,58,237,0.07); }
+        .nav-btn.active { color: #b9a4ff; background: rgba(124,58,237,0.1); border-color: rgba(124,58,237,0.25); }
 
         .page { max-width: 860px; margin: 0 auto; padding: 2rem 2rem 5rem; padding-top: calc(var(--navbar-h) + 2.5rem); }
         .page-header { margin-bottom: 2rem; }
-        .page-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; background: linear-gradient(135deg, #a78bfa, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.35rem; }
-        .page-sub { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+        .page-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; font-family: var(--font-display); color: var(--text); margin-bottom: 0.35rem; }
+        .page-sub { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); }
 
         .load-bar { display: flex; gap: 0.5rem; margin-bottom: 2rem; }
-        .input { flex: 1; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.85rem; color: var(--text); font-family: var(--font-mono); font-size: 0.85rem; outline: none; transition: border 0.15s; }
+        .input { flex: 1; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; color: var(--text); font-family: var(--font-mono); font-size: 0.8rem; outline: none; transition: border-color 0.15s; }
         .input:focus { border-color: var(--accent); }
         .input::placeholder { color: var(--muted); }
-        .btn { display: flex; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.65rem 1.1rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; white-space: nowrap; }
+        .btn { display: flex; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.6rem 1.05rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: background 0.15s; border: 1px solid transparent; white-space: nowrap; }
         .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-        .btn-primary:hover { background: #6d28d9; transform: translateY(-1px); }
+        .btn-primary:hover { background: #6d28d9; }
 
-        .contract-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem; }
-        .contract-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.25rem 1rem; cursor: pointer; transition: border-color 0.15s, transform 0.12s; position: relative; display: flex; flex-direction: column; gap: 0.75rem; }
-        .contract-card:hover { border-color: rgba(124,58,237,0.5); transform: translateY(-2px); }
+        .contract-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 0.85rem; }
+        .contract-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.15rem 1.2rem 0.95rem; cursor: pointer; transition: border-color 0.15s; position: relative; display: flex; flex-direction: column; gap: 0.7rem; }
+        .contract-card:hover { border-color: rgba(124,58,237,0.4); }
         .contract-card:hover .card-arrow { opacity: 1; }
         .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-        .card-desc { font-size: 0.95rem; font-weight: 700; color: var(--text); word-break: break-word; line-height: 1.3; flex: 1; }
-        .card-arrow { font-size: 1rem; color: var(--accent); opacity: 0; transition: opacity 0.15s; flex-shrink: 0; margin-top: 0.1rem; }
-        .card-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-        .card-addr { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); background: rgba(255,255,255,0.04); padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--border); }
-        .card-deposit { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent2); font-weight: 700; }
-        .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem; }
-        .btn-remove { background: transparent; border: none; color: var(--muted); font-family: var(--font-mono); font-size: 0.65rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 4px; transition: all 0.15s; }
-        .btn-remove:hover { color: var(--danger); background: rgba(239,68,68,0.08); }
-        .open-tag { font-family: var(--font-mono); font-size: 0.62rem; color: #a78bfa; background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25); padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 700; letter-spacing: 0.05em; }
+        .card-desc { font-size: 0.9rem; font-weight: 700; color: var(--text); word-break: break-word; line-height: 1.3; flex: 1; }
+        .card-arrow { font-size: 0.95rem; color: var(--accent); opacity: 0; transition: opacity 0.15s; flex-shrink: 0; margin-top: 0.1rem; }
+        .card-meta { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; }
+        .card-addr { font-family: var(--font-mono); font-size: 0.66rem; color: var(--muted); background: var(--surface-2); padding: 0.18rem 0.45rem; border-radius: 4px; border: 1px solid var(--border); }
+        .card-deposit { font-family: var(--font-mono); font-size: 0.68rem; color: var(--accent2); font-weight: 700; }
+        .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 0.2rem; }
+        .btn-remove { background: transparent; border: none; color: var(--muted); font-family: var(--font-mono); font-size: 0.62rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+        .btn-remove:hover { color: var(--danger); background: rgba(239,68,68,0.07); }
+        .open-tag { font-family: var(--font-mono); font-size: 0.6rem; color: #b9a4ff; background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.22); padding: 0.18rem 0.5rem; border-radius: 4px; font-weight: 700; letter-spacing: 0.05em; }
 
         .empty { text-align: center; padding: 5rem 2rem; color: var(--muted); font-family: var(--font-mono); }
-        .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.5; }
-        .empty-title { font-size: 0.9rem; color: var(--text); font-weight: 700; margin-bottom: 0.4rem; }
-        .empty-sub { font-size: 0.75rem; line-height: 1.7; }
+        .empty-icon { font-size: 2.2rem; margin-bottom: 1rem; opacity: 0.4; }
+        .empty-title { font-size: 0.86rem; color: var(--text); font-weight: 700; margin-bottom: 0.4rem; font-family: var(--font-display); }
+        .empty-sub { font-size: 0.72rem; line-height: 1.7; }
 
         .back-btn { background: transparent; border: none; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; cursor: pointer; padding: 0; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.3rem; transition: color 0.15s; }
         .back-btn:hover { color: var(--text); }
@@ -182,8 +200,8 @@ export default function MyContractsPage() {
           .page { padding: 1rem 1rem 4rem; padding-top: calc(var(--navbar-h) + 1.5rem); }
           .contract-grid { grid-template-columns: 1fr; }
           .navbar { padding: 0 1rem; }
-          .nav-btn { padding: 0.4rem 0.6rem; font-size: 0.78rem; }
-          .logo { font-size: 1.2rem; }
+          .nav-btn { padding: 0.4rem 0.6rem; font-size: 0.74rem; }
+          .logo { font-size: 1.1rem; }
           .load-bar { flex-wrap: wrap; }
         }
       `}</style>
@@ -196,8 +214,8 @@ export default function MyContractsPage() {
             <div className="logo">EscrowMAD</div>
           </div>
           <button className="nav-btn active">Profile</button>
-          <button className="nav-btn" onClick={() => router.push('/?panel=deploy')}>+ New Contract</button>
-          <button className="nav-btn" onClick={() => router.push('/?panel=join')}>Join Contract</button>
+          <button className="nav-btn" onClick={() => router.push('/?panel=contract')}>Contract</button>
+          <button className="nav-btn" onClick={() => router.push('/roadmap')}>Roadmap</button>
         </div>
         <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
           <button className="theme-toggle" onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
@@ -239,6 +257,13 @@ export default function MyContractsPage() {
           <div className="contract-grid">
             {contracts.map((c, i) => (
               <div key={i} className="contract-card" onClick={() => handleOpen(c.addr)}>
+                {contractImages[c.addr] && (
+                  <img
+                    src={`https://gateway.pinata.cloud/ipfs/${contractImages[c.addr]}`}
+                    alt={contractDescriptions[c.addr] || c.description || 'Item'}
+                    style={{width:'100%',height:'100px',objectFit:'contain',background:'var(--bg)',borderRadius:'8px',border:'1px solid var(--border)',marginBottom:'-0.1rem'}}
+                  />
+                )}
                 <div className="card-top">
                   <div className="card-desc">{contractDescriptions[c.addr] || c.description || 'Unnamed contract'}</div>
                   <div className="card-arrow">→</div>

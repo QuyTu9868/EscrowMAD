@@ -312,7 +312,7 @@ function DemoModal({ contract, onClose, onStateChange }) {
         <div style={{padding:'1.25rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
 
           {/* Product image */}
-          <img src={contract.image} alt={contract.description} style={{width:'100%',height:'200px',objectFit:'cover',borderRadius:'10px',border:'1px solid var(--border)'}} />
+          <img src={contract.image} alt={contract.description} style={{width:'100%',height:'200px',objectFit:'contain',background:'var(--bg)',borderRadius:'10px',border:'1px solid var(--border)'}} />
 
           {/* Contract info */}
           <div style={{background:'var(--bg)',border:'1px solid var(--border)',borderRadius:'10px',overflow:'hidden'}}>
@@ -581,7 +581,7 @@ export default function DemoContracts({ walletAddress }) {
             <img
               src={c.image}
               alt={c.description}
-              style={{width:'100%',height:'100px',objectFit:'cover',borderRadius:'8px',border:'1px solid var(--border)',marginBottom:'-0.1rem'}}
+              style={{width:'100%',height:'100px',objectFit:'contain',background:'var(--bg)',borderRadius:'8px',border:'1px solid var(--border)',marginBottom:'-0.1rem'}}
             />
 
             <div className="card-top">
@@ -618,4 +618,4 @@ export default function DemoContracts({ walletAddress }) {
       )}
     </>
   );
-}
+} 
