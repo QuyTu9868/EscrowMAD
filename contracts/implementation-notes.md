@@ -113,6 +113,22 @@ Hai case cuối đã kiểm chứng bằng số dư: escrow vẫn giữ nguyên 
 - Groq thật trả JSON đúng format hay không (mới test bằng mock).
 - Đường đi qua Latch thật. Lúc test tôi trỏ `LATCH_PROXY_URL` thẳng vào `http://localhost:3000`, tức bỏ qua tầng Latch. Khi có Latch thật, `LATCH_API_KEY` là key để script xác thực **với Latch**, còn `ESCROWMAD_GATEWAY_TOKEN` do Latch tự gắn vào khi forward — hai thứ khác nhau, đừng điền trùng.
 
+### Latch đã dựng xong (2026-07-25)
+
+Latch `EcrowMAD` (`lnk_374c90c21c9043c8`), upstream trỏ về Vercel.
+
+- **Proxy URL: `https://onlatch.com/proxy`** — script ghép thành `https://onlatch.com/proxy/api/agent/resolve-dispute`.
+- **Header xác thực: `Authorization: Bearer lat_...`** — đã XÁC MINH bằng request thật, không còn là suy đoán. Token tự xác định latch nào, không cần nhét id vào URL. Route không phải sửa gì.
+- Trang Connect chỉ đưa cấu hình MCP (dành cho Claude Code/Cursor). Agent script của ta gọi HTTP thuần nên lấy `LATCH_URL` + `LATCH_TOKEN` từ khối env trong cấu hình MCP đó rồi tự ghép, theo `docs/reference/proxy-api`.
+
+4 filter, đã kiểm bằng Simulate: `method` (chỉ POST), `endpoint` (allowlist đúng 1 path), `rate_limit` (20 req/3600s), `payload` (3 rule bắt buộc + 5 rule `not_exists` chặn `amount`/`to`/`recipient`/`address`/`privateKey`).
+
+**Hai lỗi cấu hình im lặng đã gặp và sửa, ghi lại để lần sau không dính:**
+1. AI Builder gắn WHEN clause *"chỉ chạy filter này khi path bắt đầu bằng /api/agent/resolve-dispute"* vào chính filter endpoint. Hệ quả ngược đời: request tới path lạ thì filter **tự tắt** và lọt. Phải bấm `Remove condition`.
+2. Ba ô giá trị của rule payload để trống (chỉ hiện placeholder xám của Stripe: `usd,eur`). Nhìn như đã điền nhưng thực ra rỗng.
+
+Cả hai đều trông đúng trên màn hình. Chỉ có chạy Simulate mới lộ ra.
+
 ### Cần bạn điền
 
 Copy `scripts/agent/.env.example` thành `scripts/agent/.env` rồi điền `GROQ_API_KEY`, `LATCH_PROXY_URL`, `LATCH_API_KEY`, `RPC_URL`, `FACTORY_ADDRESS`. File `.env` đã nằm trong `.gitignore`.
