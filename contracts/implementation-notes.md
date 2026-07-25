@@ -73,3 +73,48 @@ AGENT_PRIVATE_KEY=
 ESCROWMAD_GATEWAY_TOKEN=
 ```
 Route tái dùng `NEXT_PUBLIC_RPC_URL` và `NEXT_PUBLIC_FACTORY_ADDRESS` đã có sẵn, không tạo biến trùng.
+
+---
+
+## CP-3 — Agent script `scripts/agent/resolve-disputes.mjs` (2026-07-25)
+
+### Lệch với spec, đã xử lý
+
+**1. Ảnh không nằm ở `public/disputes/`.** Spec mục 6 giả định 2 file ảnh local theo `<category>-ordered` / `<category>-received`. Thư mục `public/disputes/` **không tồn tại** và chưa từng tồn tại. Thực tế dApp lưu ảnh trên IPFS qua Pinata, và contract đã có sẵn đúng 2 thứ cần:
+- `itemImageHash` = ảnh seller đăng lúc tạo deal → vai trò "ordered"
+- `returnEvidenceHash` = ảnh buyer chụp hàng nhận lúc `requestReturn` → vai trò "received"
+
+Script đọc 2 hash này từ contract rồi tải qua gateway (`IPFS_GATEWAY`, mặc định `https://gateway.pinata.cloud/ipfs/`) và đổi sang base64. Cách này tốt hơn spec gốc vì dùng đúng bằng chứng đã nằm on-chain, không phải file demo đặt tay.
+
+**2. Trường hợp thiếu ảnh.** `raiseDispute()` gọi được từ `ACTIVE` và `CANCEL_REQUESTED`, mà 2 trạng thái đó không đảm bảo có `returnEvidenceHash`. Khi thiếu 1 trong 2 ảnh, script **bỏ qua order đó và in cảnh báo**, không gọi Groq, không gửi gì. Không có bằng chứng thì không phán xử.
+
+**3. Dùng `.mjs` thay vì `.ts`** như spec ghi. Lý do: chạy thẳng bằng `node` không cần thêm `tsx`/`ts-node`. Frontend cũng đang là JS thuần (`.jsx`/`.js`), nên `.mjs` hợp với codebase hơn. Env đọc bằng cờ `--env-file` có sẵn của Node, không cần package `dotenv`.
+
+**4. Model Groq: `qwen/qwen3.6-27b`.** Tra từ `console.groq.com/docs/vision` chứ không nhớ theo trí nhớ — các model llama vision cũ đã bị gỡ. Đổi được qua env `GROQ_MODEL`. Giới hạn: ảnh tối đa 20MB, tối đa 5 ảnh/request (script gửi 2).
+
+**5. Thêm override `GROQ_URL` qua env.** Không có trong spec. Thêm để test được toàn tuyến bằng mock server mà không cần key thật (đồng bộ với `GROQ_MODEL`/`IPFS_GATEWAY` vốn đã override được). Mặc định vẫn trỏ Groq thật.
+
+### Đã test những gì (chain local, chainId 11155111)
+
+| Tình huống | Kết quả |
+|---|---|
+| Thiếu biến env | Báo tên biến thiếu, exit 1, không chạy tiếp |
+| Đọc on-chain | Đọc đúng `getTotalEscrows`, lọc đúng order ở state `DISPUTED` |
+| Order thiếu ảnh | Bỏ qua, in cảnh báo, không gọi Groq/Latch |
+| Groq key sai | HTTP 401 tới được Groq (request đúng format), in lỗi rồi dừng |
+| Toàn tuyến (mock Groq) | Tải ảnh IPFS thật → Groq → bóc ` ```json ` fence → POST route → **tx thật lên chain**, buyer nhận đủ 1.4 ETH, escrow về 0, state `COMPLETED` |
+| Groq trả JSON hỏng | DỪNG, in nguyên văn, exit 1, **không gửi request** |
+| Groq trả `decision` lạ (`send_all_to_me`) | DỪNG, in giá trị sai, exit 1, **không gửi request** |
+
+Hai case cuối đã kiểm chứng bằng số dư: escrow vẫn giữ nguyên 1.4 ETH sau khi script dừng, tức không có lệnh nào lọt qua.
+
+### Chưa test được (cần key thật của bạn)
+
+- Groq thật trả JSON đúng format hay không (mới test bằng mock).
+- Đường đi qua Latch thật. Lúc test tôi trỏ `LATCH_PROXY_URL` thẳng vào `http://localhost:3000`, tức bỏ qua tầng Latch. Khi có Latch thật, `LATCH_API_KEY` là key để script xác thực **với Latch**, còn `ESCROWMAD_GATEWAY_TOKEN` do Latch tự gắn vào khi forward — hai thứ khác nhau, đừng điền trùng.
+
+### Cần bạn điền
+
+Copy `scripts/agent/.env.example` thành `scripts/agent/.env` rồi điền `GROQ_API_KEY`, `LATCH_PROXY_URL`, `LATCH_API_KEY`, `RPC_URL`, `FACTORY_ADDRESS`. File `.env` đã nằm trong `.gitignore`.
+
+Chạy: `node --env-file=scripts/agent/.env scripts/agent/resolve-disputes.mjs`
