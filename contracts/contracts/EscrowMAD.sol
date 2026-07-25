@@ -30,6 +30,9 @@ pragma solidity ^0.8.20;
 interface IEscrowSBT {
     function mint(address to, string calldata imageHash) external;
 }
+interface IEscrowFactory {
+    function agent() external view returns (address);
+}
 contract EscrowMAD {
 
     // ─── Enums ────────────────────────────────────────────────────────────────
@@ -41,7 +44,8 @@ contract EscrowMAD {
         RETURN_REQUESTED,  // 3 — đang chờ đồng thuận trả hàng
         COMPLETED,         // 4 — hoàn thành
         CANCELLED,         // 5 — đã hủy (seller cancel sau 24h)
-        SELLER_CLAIMED     // 6 — seller tự lấy tiền sau 14 ngày buyer mất tích
+        SELLER_CLAIMED,    // 6 — seller tự lấy tiền sau 14 ngày buyer mất tích
+        DISPUTED           // 7 — tranh chấp, chờ agent (qua Latch) resolve
     }
 
     // ─── Storage ──────────────────────────────────────────────────────────────
@@ -49,6 +53,7 @@ contract EscrowMAD {
     address public immutable seller;
     address public buyer;
     address public immutable sbtContract;
+    address public immutable factory;
 
     uint256 public itemPrice;
     uint256 public deposit;        // 20% itemPrice
@@ -96,6 +101,9 @@ contract EscrowMAD {
 
     event MessageSent(address indexed from, string message, uint256 timestamp);
 
+    event DisputeRaised(address indexed by);
+    event DisputeResolved(bool releaseToSeller, address indexed agent);
+
     // ─── Modifiers ────────────────────────────────────────────────────────────
 
     modifier onlySeller() { require(msg.sender == seller, "Only seller"); _; }
@@ -106,6 +114,10 @@ contract EscrowMAD {
     }
     modifier inState(State _state) {
         require(state == _state, "Invalid state");
+        _;
+    }
+    modifier onlyAgent() {
+        require(msg.sender == IEscrowFactory(factory).agent(), "Not agent");
         _;
     }
 
@@ -119,11 +131,13 @@ contract EscrowMAD {
         uint256 _itemPrice,
         string memory _description,
         address _sbtContract,
-        address _seller 
+        address _seller,
+        address _factory
     ) payable {
         require(_itemPrice > 0,       "Price must be > 0");
         require(_itemPrice % 5 == 0,  "Price must be divisible by 5");
         require(_sbtContract != address(0), "Invalid SBT contract");
+        require(_factory != address(0),     "Invalid factory");
 
         uint256 requiredDeposit = _itemPrice / 5;
         require(msg.value == requiredDeposit, "Seller must send 20% deposit");
@@ -133,6 +147,7 @@ contract EscrowMAD {
         deposit         = requiredDeposit;
         itemDescription = _description;
         sbtContract     = _sbtContract;
+        factory         = _factory;
         state           = State.AWAITING_BUYER;
         createdAt       = block.timestamp;
 }
@@ -342,6 +357,42 @@ contract EscrowMAD {
         emit ReturnAutoApproved();
         _transfer(seller, deposit);
         _transfer(buyer,  itemPrice + deposit);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // DISPUTE
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * @notice Buyer hoặc seller báo tranh chấp — đóng băng giao dịch, chờ agent AI
+     * (qua Latch) resolve. Không có đường quay lại ACTIVE từ đây.
+     */
+    function raiseDispute() external onlyParticipant {
+        require(
+            state == State.ACTIVE ||
+            state == State.CANCEL_REQUESTED ||
+            state == State.RETURN_REQUESTED,
+            "Cannot raise dispute in this state"
+        );
+        state = State.DISPUTED;
+        emit DisputeRaised(msg.sender);
+    }
+
+    /**
+     * @notice Chỉ agent (địa chỉ lưu trong EscrowFactory) gọi được, chỉ nhận bool.
+     * Agent không được nói "chuyển X ETH cho địa chỉ Y" — số tiền và người nhận
+     * đã cố định sẵn trong escrow.
+     * releaseToSeller == true  -> seller nhận toàn bộ pool (itemPrice + 2*deposit)
+     * releaseToSeller == false -> buyer nhận toàn bộ pool
+     */
+    function resolveDispute(bool releaseToSeller) external onlyAgent inState(State.DISPUTED) {
+        state = State.COMPLETED;
+        emit DisputeResolved(releaseToSeller, msg.sender);
+        if (releaseToSeller) {
+            _transfer(seller, address(this).balance);
+        } else {
+            _transfer(buyer, address(this).balance);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

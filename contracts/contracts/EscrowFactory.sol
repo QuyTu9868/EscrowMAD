@@ -15,6 +15,9 @@ contract EscrowFactory {
     EscrowSBT public immutable sbtContract;
     address[]  public allEscrows;
 
+    address public owner;
+    address public agent;   // ví agent AI — gọi resolveDispute() trên các EscrowMAD
+
     // ─── Events ───────────────────────────────────────────────────────────────
 
     event EscrowCreated(
@@ -24,11 +27,26 @@ contract EscrowFactory {
         string  description
     );
 
+    event AgentUpdated(address indexed agent);
+
+    // ─── Modifiers ────────────────────────────────────────────────────────────
+
+    modifier onlyOwner() { require(msg.sender == owner, "Not owner"); _; }
+
     // ─── Constructor ──────────────────────────────────────────────────────────
 
     constructor(address _sbtContract) {
         require(_sbtContract != address(0), "Invalid SBT address");
         sbtContract = EscrowSBT(_sbtContract);
+        owner = msg.sender;
+    }
+
+    // ─── Agent ────────────────────────────────────────────────────────────────
+
+    function setAgent(address _agent) external onlyOwner {
+        require(_agent != address(0), "Invalid agent");
+        agent = _agent;
+        emit AgentUpdated(_agent);
     }
 
     // ─── Create Escrow ────────────────────────────────────────────────────────
@@ -48,7 +66,8 @@ contract EscrowFactory {
             _itemPrice,
             _description,
             address(sbtContract),
-            msg.sender
+            msg.sender,
+            address(this)
         );
 
         address escrowAddress = address(escrow);

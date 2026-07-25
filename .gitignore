@@ -46,3 +46,8 @@ next-env.d.ts
 contracts/node_modules/
 contracts/artifacts/
 contracts/cache/
+
+# foundry (contracts/)
+contracts/out/
+contracts/cache-forge/
+contracts/lib/
