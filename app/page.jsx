@@ -1195,6 +1195,27 @@ useEffect(() => {
                 </>
               )}
 
+              {[STATE.ACTIVE, STATE.CANCEL_REQUESTED, STATE.RETURN_REQUESTED].includes(stateNum) && (isBuyer || isSeller) && (
+                <div className="actions single" style={{marginTop:'0.75rem'}}>
+                  {itemImageHash && returnEvidenceHash ? (
+                    <button className="btn btn-danger" style={{width:'100%'}} disabled={isLoading} onClick={() => {
+                      if (!window.confirm('Raise a dispute?\n\nAn AI agent will compare the listing photo with your photo of the delivered item, then release the funds to whoever it decides. This cannot be undone.')) return;
+                      tx('raiseDispute', [], null, '⚖️ Dispute raised. An AI agent will review the evidence.');
+                    }}>
+                      <span className="btn-label">{isLoading && <span className="spinner" />}<AlertIcon size={13}/> Raise Dispute</span>
+                    </button>
+                  ) : (
+                    <div className="evidence-notice"><AlertIcon size={13}/> A dispute needs both photos: the seller&apos;s listing photo and the buyer&apos;s photo of what arrived. Attach the second one through Request Return first.</div>
+                  )}
+                </div>
+              )}
+
+              {stateNum === STATE.DISPUTED && (
+                <div className="no-role"><AlertIcon size={14}/> Dispute under review.
+                  <div style={{marginTop:'0.5rem',color:'var(--muted)',fontWeight:700}}>An AI agent is comparing the listing photo with the photo of the delivered item. Funds stay locked until it decides.</div>
+                </div>
+              )}
+
               {stateNum === STATE.COMPLETED && (
                 <div className="no-role"><CheckIcon size={14}/> Escrow completed.
                   {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.35rem'}}><CoinIcon size={13}/> Funds released to your wallet.</div>}

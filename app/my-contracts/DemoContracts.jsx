@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { CloseIcon, BellIcon, FlaskIcon, AlertIcon, ClockIcon, PackageIcon, InfoIcon, CheckIcon, UndoIcon } from '../components/Icons';
+import { STATE } from '../../lib/escrowAbi';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const short = (a) => a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '—';
@@ -11,16 +12,6 @@ const fmtDateTime = (ts) => {
 };
 
 // ─── State constants ─────────────────────────────────────────────────────────
-const STATE = {
-  AWAITING_BUYER: 0,
-  ACTIVE: 1,
-  CANCEL_REQUESTED: 2,
-  RETURN_REQUESTED: 3,
-  COMPLETED: 4,
-  CANCELLED: 5,
-  SELLER_CLAIMED: 6,
-};
-
 const STATE_INFO = {
   0: { label: 'AWAITING BUYER',   color: '#93641E', desc: 'Waiting for a buyer to join' },
   1: { label: 'ACTIVE',           color: '#3E6B43', desc: 'Transaction in progress' },
@@ -29,6 +20,7 @@ const STATE_INFO = {
   4: { label: 'COMPLETED',        color: '#2B6C93', desc: 'Transaction completed successfully' },
   5: { label: 'CANCELLED',        color: '#7A776D', desc: 'Contract cancelled, funds refunded' },
   6: { label: 'SELLER CLAIMED',   color: '#7A776D', desc: 'Seller claimed funds after timeout' },
+  7: { label: 'DISPUTED',         color: '#A23A34', desc: 'AI agent is reviewing the evidence' },
 };
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
@@ -191,6 +183,53 @@ const BASE_CONTRACTS = [
       { sender: 'system',    type: 'system', message: '⏰ Seller claimed funds after buyer timeout.',                                                             ts: Date.now() - 99000_000 },
     ],
   },
+  {
+    id: 'demo-9',
+    description: 'Nike Air Force 1 — White, US 9',
+    price: '0.015',
+    deposit: '0.003',
+    image: 'https://picsum.photos/seed/nikeaf1-listing/400/300',
+    receivedImage: 'https://picsum.photos/seed/nikeaf1-arrived/400/300',
+    state: STATE.DISPUTED,
+    shipped: true,
+    role: 'buyer',
+    address: '18 Trần Hưng Đạo, Hoàn Kiếm, Hà Nội',
+    ghn: { code: 'GHN-NK55210394', shippedAt: Date.now() - 900000_000 },
+    cancelInitiator: null,
+    createdAt: Date.now() - 1200000_000,
+    chat: [
+      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment.',                                                    ts: Date.now() - 1200000_000 },
+      { sender: 'system',    type: 'system', message: '📦 Seller shipped. GHN order: GHN-NK55210394',                                             ts: Date.now() - 900000_000 },
+      { sender: DEMO_BUYER,  type: 'text',   message: 'These are not the shoes in your listing. Different colourway and the box is damaged.',      ts: Date.now() - 500000_000 },
+      { sender: DEMO_SELLER, type: 'text',   message: 'That is what I sent. Photo must have been taken in bad lighting.',                         ts: Date.now() - 480000_000 },
+      { sender: 'system',    type: 'system', message: '↩ Buyer requested a return with photo evidence.',                                          ts: Date.now() - 460000_000 },
+      { sender: DEMO_SELLER, type: 'text',   message: 'I do not accept the return.',                                                              ts: Date.now() - 440000_000 },
+      { sender: 'system',    type: 'system', message: '⚖️ Dispute raised. An AI agent will review the evidence.',                                  ts: Date.now() - 420000_000 },
+    ],
+  },
+  {
+    id: 'demo-10',
+    description: 'Canon EOS R50 Body — Shutter count 4k',
+    price: '0.085',
+    deposit: '0.017',
+    image: 'https://picsum.photos/seed/canonr50-listing/400/300',
+    receivedImage: 'https://picsum.photos/seed/canonr50-arrived/400/300',
+    state: STATE.DISPUTED,
+    shipped: true,
+    role: 'seller',
+    address: '250 Nguyễn Văn Linh, Hải Châu, Đà Nẵng',
+    ghn: { code: 'GHN-CN90183726', shippedAt: Date.now() - 700000_000 },
+    cancelInitiator: null,
+    createdAt: Date.now() - 1000000_000,
+    chat: [
+      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment.',                                        ts: Date.now() - 1000000_000 },
+      { sender: 'system',    type: 'system', message: '📦 Seller shipped. GHN order: GHN-CN90183726',                                 ts: Date.now() - 700000_000 },
+      { sender: DEMO_BUYER,  type: 'text',   message: 'Body arrived with a deep scratch on the mount, that was not in your photos.',  ts: Date.now() - 300000_000 },
+      { sender: DEMO_SELLER, type: 'text',   message: 'It left here in perfect condition. This looks like shipping damage.',          ts: Date.now() - 280000_000 },
+      { sender: 'system',    type: 'system', message: '↩ Buyer requested a return with photo evidence.',                              ts: Date.now() - 260000_000 },
+      { sender: 'system',    type: 'system', message: '⚖️ Dispute raised. An AI agent will review the evidence.',                      ts: Date.now() - 240000_000 },
+    ],
+  },
 ];
 
 // ─── Demo Modal ───────────────────────────────────────────────────────────────
@@ -312,8 +351,21 @@ function DemoModal({ contract, onClose, onStateChange }) {
 
         <div style={{padding:'1.25rem',display:'flex',flexDirection:'column',gap:'1rem'}}>
 
-          {/* Product image */}
-          <img src={contract.image} alt={contract.description} style={{width:'100%',height:'200px',objectFit:'contain',background:'var(--bg)',borderRadius:'10px',border:'1px solid var(--border)'}} />
+          {/* Product image. Khi co tranh chap thi hien ca 2 anh de so sanh: anh
+              seller dang luc dau va anh buyer chup luc nhan hang. Day chinh la
+              2 anh ma AI agent doi chieu. */}
+          {contract.receivedImage ? (
+            <div style={{display:'flex',gap:'0.6rem'}}>
+              {[['Ordered', contract.image], ['Received', contract.receivedImage]].map(([label, src]) => (
+                <figure key={label} style={{margin:0,flex:1,minWidth:0}}>
+                  <figcaption style={{fontSize:'0.68rem',letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--muted)',marginBottom:'0.35rem'}}>{label}</figcaption>
+                  <img src={src} alt={label} style={{width:'100%',height:'160px',objectFit:'contain',background:'var(--bg)',borderRadius:'10px',border:'1px solid var(--border)'}} />
+                </figure>
+              ))}
+            </div>
+          ) : (
+            <img src={contract.image} alt={contract.description} style={{width:'100%',height:'200px',objectFit:'contain',background:'var(--bg)',borderRadius:'10px',border:'1px solid var(--border)'}} />
+          )}
 
           {/* Contract info */}
           <div style={{background:'var(--bg)',border:'1px solid var(--border)',borderRadius:'10px',overflow:'hidden'}}>
