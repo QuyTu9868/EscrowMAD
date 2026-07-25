@@ -18,67 +18,11 @@ import {
   ArrowLeftIcon, ExternalLinkIcon, ImageIcon, FolderIcon, ShieldIcon, ChainIcon, CartIcon,
   TagIcon, ChatIcon, CoinIcon, BellIcon, CelebrateIcon, ClockIcon, AlertIcon, CameraIcon, StarIcon,
 } from './components/Icons';
+import { ESCROW_ABI as ABI, FACTORY_ABI, STATE, STATE_LABELS, STATE_COLORS, DONE_STATES } from '../lib/escrowAbi';
 
 const WHY_ICONS = { LockIcon, ShieldIcon, ClockIcon, ChatIcon, PackageIcon, MailIcon, CoinIcon, StarIcon };
 
-const ABI = [
-  { inputs: [], name: 'seller',             outputs: [{ type: 'address' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'buyer',              outputs: [{ type: 'address' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'itemPrice',          outputs: [{ type: 'uint256' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'deposit',            outputs: [{ type: 'uint256' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'getState',           outputs: [{ type: 'uint8'   }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'getBalance',         outputs: [{ type: 'uint256' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'createdAt',          outputs: [{ type: 'uint256' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'activeAt',           outputs: [{ type: 'uint256' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'requestedAt',        outputs: [{ type: 'uint256' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'requestInitiator',   outputs: [{ type: 'address' }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'itemDescription',    outputs: [{ type: 'string'  }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'itemImageHash',      outputs: [{ type: 'string'  }], stateMutability: 'view',    type: 'function' },
-  { inputs: [], name: 'returnEvidenceHash', outputs: [{ type: 'string'  }], stateMutability: 'view',    type: 'function' },
-  { inputs: [{ name: '_addressHash', type: 'string' }],  name: 'joinAsBuyer',               outputs: [], stateMutability: 'payable',    type: 'function' },
-  { inputs: [],                                           name: 'confirmDelivery',           outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'cancelAfter24h',            outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'claimAfterBuyerTimeout',    outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'requestCancel',             outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'withdrawCancelRequest',     outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'approveCancel',             outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [{ name: 'evidenceHash', type: 'string' }],  name: 'requestReturn',             outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'withdrawReturnRequest',     outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'approveReturn',             outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [],                                           name: 'executeReturnAfterTimeout', outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { inputs: [{ name: 'ipfsHash', type: 'string' }],      name: 'uploadItemImage',           outputs: [], stateMutability: 'nonpayable', type: 'function' },
-  { name: 'CancelRequested', type: 'event', inputs: [{ name: 'by', type: 'address', indexed: true }] },
-  { name: 'ReturnRequested', type: 'event', inputs: [{ name: 'by', type: 'address', indexed: true }, { name: 'evidenceHash', type: 'string', indexed: false }] },
-];
-
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
-const FACTORY_ABI = [
-  {
-    inputs: [
-      { name: '_itemPrice',   type: 'uint256' },
-      { name: '_description', type: 'string'  },
-    ],
-    name: 'createEscrow',
-    outputs: [{ type: 'address' }],
-    stateMutability: 'payable',
-    type: 'function',
-  },
-  {
-    name: 'EscrowCreated',
-    type: 'event',
-    inputs: [
-      { name: 'escrowAddress', type: 'address', indexed: true },
-      { name: 'seller',        type: 'address', indexed: true },
-      { name: 'itemPrice',     type: 'uint256', indexed: false },
-      { name: 'description',   type: 'string',  indexed: false },
-    ],
-  },
-];
-
-const STATE = { AWAITING_BUYER: 0, ACTIVE: 1, CANCEL_REQUESTED: 2, RETURN_REQUESTED: 3, COMPLETED: 4, CANCELLED: 5, SELLER_CLAIMED: 6 };
-const STATE_LABELS = ['AWAITING BUYER', 'ACTIVE', 'CANCEL REQUESTED', 'RETURN REQUESTED', 'COMPLETED', 'CANCELLED', 'SELLER CLAIMED'];
-const STATE_COLORS = ['#93641E', '#3E6B43', '#A23A34', '#93641E', '#2B6C93', '#7A776D', '#7A776D'];
-const DONE_STATES = [STATE.COMPLETED, STATE.CANCELLED, STATE.SELLER_CLAIMED];
 
 const short  = (a) => a ? `${a.slice(0,6)}...${a.slice(-4)}` : '—';
 const fmt    = (w) => w != null ? `${formatEther(w)} ETH` : '—';

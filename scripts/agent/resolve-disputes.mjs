@@ -9,23 +9,12 @@
 
 import { createPublicClient, http } from 'viem';
 import { sepolia } from 'viem/chains';
+import { ESCROW_ABI, FACTORY_ABI, STATE } from '../../lib/escrowAbi.mjs';
 
-const DISPUTED_STATE = 7; // EscrowMAD.State.DISPUTED
 const MAX_REASON_LENGTH = 500; // khop policy payload cua Latch
 const GROQ_URL = process.env.GROQ_URL || 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.6-27b';
 const IPFS_GATEWAY = process.env.IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs/';
-
-const FACTORY_ABI = [
-  { inputs: [], name: 'getTotalEscrows', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' },
-  { inputs: [{ name: '', type: 'uint256' }], name: 'allEscrows', outputs: [{ type: 'address' }], stateMutability: 'view', type: 'function' },
-];
-const ESCROW_ABI = [
-  { inputs: [], name: 'getState', outputs: [{ type: 'uint8' }], stateMutability: 'view', type: 'function' },
-  { inputs: [], name: 'itemDescription', outputs: [{ type: 'string' }], stateMutability: 'view', type: 'function' },
-  { inputs: [], name: 'itemImageHash', outputs: [{ type: 'string' }], stateMutability: 'view', type: 'function' },
-  { inputs: [], name: 'returnEvidenceHash', outputs: [{ type: 'string' }], stateMutability: 'view', type: 'function' },
-];
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -180,7 +169,7 @@ async function main() {
     addresses.map((address) => client.readContract({ address, abi: ESCROW_ABI, functionName: 'getState' })),
   );
 
-  const disputed = orderIds.filter((id) => states[id] === DISPUTED_STATE);
+  const disputed = orderIds.filter((id) => states[id] === STATE.DISPUTED);
   if (disputed.length === 0) {
     console.log('Khong co dispute nao dang cho xu ly.');
     return;

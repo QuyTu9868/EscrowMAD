@@ -118,3 +118,56 @@ Hai case cuối đã kiểm chứng bằng số dư: escrow vẫn giữ nguyên 
 Copy `scripts/agent/.env.example` thành `scripts/agent/.env` rồi điền `GROQ_API_KEY`, `LATCH_PROXY_URL`, `LATCH_API_KEY`, `RPC_URL`, `FACTORY_ADDRESS`. File `.env` đã nằm trong `.gitignore`.
 
 Chạy: `node --env-file=scripts/agent/.env scripts/agent/resolve-disputes.mjs`
+
+---
+
+## CP-4 — Trang admin + đăng nhập Google Authenticator (2026-07-25)
+
+### Breaking change của Next 16 suýt gây lỗ hổng
+
+**Next.js 16 đổi tên `middleware.ts` thành `proxy.ts`.** Nếu đặt tên file là `middleware.js` theo thói quen cũ thì Next **không chạy nó và cũng không báo lỗi** - trang admin trông như đã khoá nhưng thực tế ai gõ URL cũng vào được. Cách kiểm chứng: chạy `npm run build`, output phải có dòng `ƒ Proxy (Middleware)`. Không có dòng đó là file chưa được nhận diện.
+
+### otplib v13 khác v12 hoàn toàn
+
+- Không còn `authenticator.*`. API mới: `generateSecret()`, `generate({secret})`, `verify({secret, token})`, `generateURI({issuer, label, secret})`.
+- **`verify()` trả về object `{valid: boolean}`, KHÔNG phải boolean.** Viết `if (await verify(...))` là luôn đúng vì object luôn truthy - tức ai nhập mã gì cũng đăng nhập được. Phải đọc `.valid`.
+- Dung sai lệch giờ dùng `epochTolerance`, tính bằng **giây** (v12 dùng `window`, tính theo bước 30 giây). Đang đặt 30 giây.
+
+### Bảo vệ 2 lớp
+
+Theo đúng khuyến nghị trong docs của Next (`proxy` chạy trên mọi request kể cả prefetch nên không làm việc nặng ở đó):
+1. `proxy.js` - chỉ kiểm tra cookie **có tồn tại** hay không, thiếu thì đá về `/admin/login`.
+2. `app/admin/disputes/page.jsx` - xác minh **chữ ký HMAC thật** + hạn dùng. Đây mới là lớp chặn thật.
+
+Session ký bằng HMAC-SHA256 qua **Web Crypto** (không phải `node:crypto`) để chạy được cả trong Edge runtime của proxy. Cookie `httpOnly`, hạn 8 tiếng, hạn dùng nằm trong phần được ký nên không kéo dài được.
+
+### Đã test
+
+| Tình huống | Kết quả |
+|---|---|
+| Vào `/admin/disputes` chưa đăng nhập | 307 về `/admin/login` |
+| Mã sai | 401 |
+| Mã không đủ 6 chữ số | 400 |
+| Mã đúng | 200 + cookie `httpOnly` |
+| Cookie hợp lệ | Trang hiện nội dung |
+| Cookie bịa hoàn toàn | 0 dấu hiệu nội dung admin bị rò rỉ |
+| Cookie kéo dài hạn, giữ chữ ký cũ | 0 dấu hiệu rò rỉ |
+| Cookie hết hạn | 0 dấu hiệu rò rỉ |
+
+Lưu ý khi đọc kết quả: 3 trường hợp giả mạo trả **HTTP 200** chứ không phải 307. Đó là cách App Router xử lý `redirect()` trong server component (trả kèm chuyển hướng phía client). Đã kiểm chứng bằng nội dung body: không rò rỉ gì.
+
+### Gộp ABI về một chỗ - sửa lỗi thật
+
+`lib/escrowAbi.mjs` giờ là nguồn duy nhất cho ABI + hằng số trạng thái, dùng chung bởi `app/page.jsx`, API route, agent script và trang admin. Trước đó mỗi nơi một bản, dẫn tới lỗi thật: `STATE_LABELS` trong `page.jsx` chỉ có 7 phần tử (0-6), nên đơn ở trạng thái `DISPUTED` (=7) sẽ hiện `undefined`. Đã bỏ 56 dòng trùng khỏi `page.jsx`.
+
+Dùng đuôi `.mjs` để plain `node` (agent script) đọc được mà không cảnh báo, Next vẫn resolve được không cần ghi đuôi.
+
+### Còn thiếu, nên biết
+
+- **Không có rate limit trên `/api/admin/login`.** Mã chỉ 6 chữ số, đổi mỗi 30 giây. Về lý thuyết có thể dò tự động. Serverless không giữ được bộ đếm trong RAM nên muốn chặn thật phải dùng Upstash Redis - xem skill `dapp-production-checklist` mục 2. Chưa làm vì chưa mở cho người ngoài.
+- Trang admin chưa có nút đăng xuất. Xoá cookie thủ công hoặc chờ hết 8 tiếng.
+
+### Cần bạn làm
+
+1. Chạy `node scripts/admin/setup-totp.mjs`, quét QR bằng Google Authenticator.
+2. Thêm `ADMIN_TOTP_SECRET` và `ADMIN_SESSION_SECRET` vào `.env.local` **và** Environment Variables trên Vercel, rồi redeploy.

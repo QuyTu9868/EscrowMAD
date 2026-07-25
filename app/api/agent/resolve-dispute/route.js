@@ -4,6 +4,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { sepolia } from 'viem/chains';
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ESCROW_ABI, FACTORY_ABI, STATE } from '../../../../lib/escrowAbi';
 
 // Firestore riêng cho route này (không import app/firebase.js vì file đó có
 // 'use client' — tránh để boundary client/server mập mờ trong route handler).
@@ -17,16 +18,6 @@ const firebaseConfig = {
 };
 const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(firebaseApp);
-
-const FACTORY_ABI = [
-  { inputs: [{ name: '', type: 'uint256' }], name: 'allEscrows', outputs: [{ type: 'address' }], stateMutability: 'view', type: 'function' },
-];
-const ESCROW_ABI = [
-  { inputs: [], name: 'getState', outputs: [{ type: 'uint8' }], stateMutability: 'view', type: 'function' },
-  { inputs: [{ name: 'releaseToSeller', type: 'bool' }], name: 'resolveDispute', outputs: [], stateMutability: 'nonpayable', type: 'function' },
-];
-
-const DISPUTED_STATE = 7; // EscrowMAD.State.DISPUTED — xem contracts/contracts/EscrowMAD.sol
 
 export async function POST(req) {
   // 1. Header secret token — kiểm tra trước tiên, sai thì dừng ngay, không đọc body.
@@ -81,7 +72,7 @@ export async function POST(req) {
     functionName: 'getState',
   });
 
-  if (state !== DISPUTED_STATE) {
+  if (state !== STATE.DISPUTED) {
     return NextResponse.json({ error: 'Order is not in Disputed state' }, { status: 409 });
   }
 
