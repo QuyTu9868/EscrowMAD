@@ -14,7 +14,9 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {},
+    hardhat: {
+      chainId: 11155111, // giống Sepolia — để test ký tx local khớp chain viem dùng ở production
+    },
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL || "https://rpc.sepolia.org",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
