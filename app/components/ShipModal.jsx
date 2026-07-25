@@ -3,6 +3,7 @@
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
+import { CheckIcon, CloseIcon, PackageIcon, AlertIcon, CelebrateIcon, SearchIcon, ExternalLinkIcon } from './Icons';
 
 // const GHN_DISTRICT_URL = 'https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/district';
 // const GHN_WARD_URL     = 'https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/ward';
@@ -151,26 +152,26 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
   if (!isOpen) return null;
 
   const inputStyle = {
-    width: '100%', background: 'var(--input-bg, #0a0a0f)', border: '1px solid var(--border, #1e1e2e)',
-    borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text, #e2e2f0)',
+    width: '100%', background: 'var(--input-bg)', border: '1px solid var(--border)',
+    borderRadius: '8px', padding: '0.6rem 0.85rem', color: 'var(--text)',
     fontFamily: 'var(--font-mono, monospace)', fontSize: '0.82rem', outline: 'none',
     marginBottom: '0.6rem', boxSizing: 'border-box',
   };
   const selectStyle = { ...inputStyle, cursor: 'pointer' };
-  const labelStyle  = { fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--muted, #5a5a7a)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' };
+  const labelStyle  = { fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' };
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 999,
-      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+      background: 'rgba(23,21,15,0.55)', backdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '1rem',
     }}>
       <div style={{
-        background: 'var(--surface, #111118)', border: '1px solid var(--border, #1e1e2e)',
-        borderRadius: '16px', padding: '1.75rem', width: '100%', maxWidth: '480px',
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: '12px', padding: '1.75rem', width: '100%', maxWidth: '480px',
         maxHeight: '90vh', overflowY: 'auto',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
@@ -178,22 +179,22 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', letterSpacing: '0.18em', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
               GHN Shipping
             </div>
-            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)' }}>
-              {step === 3 ? '✅ Order Created' : 'Create Delivery Order'}
+            <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              {step === 3 ? <><CheckIcon size={16}/> Order Created</> : 'Create Delivery Order'}
             </div>
           </div>
           <button
             onClick={handleClose}
             aria-label="Close modal"
-            style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: '1.25rem', cursor: 'pointer', lineHeight: 1, padding: '0.25rem' }}
-          >✕</button>
+            style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', lineHeight: 1, padding: '0.25rem', display: 'flex' }}
+          ><CloseIcon size={18}/></button>
         </div>
 
         {/* Step 1 — Form */}
         {step === 1 && (
           <>
-            <div style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.18)', borderRadius: '8px', padding: '0.6rem 0.75rem', marginBottom: '1rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--accent2, #06b6d4)' }}>
-              📦 Item: <strong>{itemDescription || '—'}</strong>
+            <div style={{ background: 'var(--accent2-bg)', border: '1px solid var(--accent2)', borderRadius: '8px', padding: '0.6rem 0.75rem', marginBottom: '1rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--accent2)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <PackageIcon size={14}/> Item: <strong>{itemDescription || '—'}</strong>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 0.75rem' }}>
@@ -227,20 +228,20 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
             </div>
 
             {error && (
-              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '0.6rem 0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: '#f87171', marginBottom: '0.75rem' }}>
-                ⚠️ {error}
+              <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger)', borderRadius: '8px', padding: '0.6rem 0.75rem', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--danger)', marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                <AlertIcon size={14}/> <span>{error}</span>
               </div>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
               <button
                 onClick={handleClose}
-                style={{ padding: '0.7rem', borderRadius: '8px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)' }}
+                style={{ padding: '0.7rem', borderRadius: '6px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)' }}
               >Cancel</button>
               <button
                 onClick={handleSubmit}
-                style={{ padding: '0.7rem', borderRadius: '8px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', background: 'var(--accent, #7c3aed)', border: '1px solid var(--accent)', color: '#fff' }}
-              >📦 Create &amp; Mark Shipped</button>
+                style={{ padding: '0.7rem', borderRadius: '6px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', background: 'var(--accent)', border: '1px solid var(--accent)', color: 'var(--accent-contrast)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+              ><PackageIcon size={14}/> Create &amp; Mark Shipped</button>
             </div>
           </>
         )}
@@ -248,7 +249,7 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
         {/* Step 2 — Loading */}
         {step === 2 && (
           <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
-            <div style={{ width: '36px', height: '36px', border: '3px solid rgba(124,58,237,0.2)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 1rem' }} />
+            <div style={{ width: '36px', height: '36px', border: '3px solid var(--border)', borderTopColor: 'var(--text)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 1rem' }} />
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--muted)' }}>Creating GHN order...</div>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
@@ -257,7 +258,7 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
         {/* Step 3 — Success */}
         {step === 3 && (
           <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎉</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: 'var(--success)' }}><CelebrateIcon size={32}/></div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--muted)', marginBottom: '0.5rem' }}>Order code</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', fontWeight: 700, color: 'var(--accent2)', letterSpacing: '0.1em', marginBottom: '1.5rem' }}>
               {orderCode}
@@ -266,9 +267,9 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
               href={`https://donhang.ghn.vn/?order_code=${orderCode}`}
               target="_blank"
               rel="noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.7rem 1.4rem', borderRadius: '8px', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, background: 'var(--accent)', color: '#fff', textDecoration: 'none', marginBottom: '1rem' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.7rem 1.4rem', borderRadius: '6px', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, background: 'var(--accent)', color: 'var(--accent-contrast)', textDecoration: 'none', marginBottom: '1rem' }}
             >
-              🔍 Track on GHN ↗
+              <SearchIcon size={14}/> Track on GHN <ExternalLinkIcon size={12}/>
             </a>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--muted)', lineHeight: 1.7 }}>
               The order code and tracking link have been saved to the contract chat. Both buyer and seller can track this shipment.

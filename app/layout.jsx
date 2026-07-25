@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Space_Mono, Syne } from 'next/font/google';
+import { Space_Mono, Syne, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 
 const Providers = dynamic(() => import('./providers').then(mod => mod.Providers), { ssr: false });
@@ -18,9 +18,17 @@ const syne = Syne({
   variable: '--font-syne',
 });
 
+// Font biên tập (editorial serif) — dùng cho tiêu đề lớn, theo skill minimalist-ui.
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+  variable: '--font-serif',
+});
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${spaceMono.variable} ${syne.variable}`}>
+    <html lang="en" className={`${spaceMono.variable} ${syne.variable} ${instrumentSerif.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>

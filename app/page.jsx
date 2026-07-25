@@ -11,7 +11,15 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import ShipModal from './components/ShipModal';
+import ReviewPanel from './components/ReviewPanel';
 import { sendEscrowEmail } from './emailService';
+import {
+  CheckIcon, CloseIcon, UndoIcon, PackageIcon, SunIcon, MoonIcon, LockIcon, MailIcon,
+  ArrowLeftIcon, ExternalLinkIcon, ImageIcon, FolderIcon, ShieldIcon, ChainIcon, CartIcon,
+  TagIcon, ChatIcon, CoinIcon, BellIcon, CelebrateIcon, ClockIcon, AlertIcon, CameraIcon, StarIcon,
+} from './components/Icons';
+
+const WHY_ICONS = { LockIcon, ShieldIcon, ClockIcon, ChatIcon, PackageIcon, MailIcon, CoinIcon, StarIcon };
 
 const ABI = [
   { inputs: [], name: 'seller',             outputs: [{ type: 'address' }], stateMutability: 'view',    type: 'function' },
@@ -69,7 +77,7 @@ const FACTORY_ABI = [
 
 const STATE = { AWAITING_BUYER: 0, ACTIVE: 1, CANCEL_REQUESTED: 2, RETURN_REQUESTED: 3, COMPLETED: 4, CANCELLED: 5, SELLER_CLAIMED: 6 };
 const STATE_LABELS = ['AWAITING BUYER', 'ACTIVE', 'CANCEL REQUESTED', 'RETURN REQUESTED', 'COMPLETED', 'CANCELLED', 'SELLER CLAIMED'];
-const STATE_COLORS = ['#f59e0b', '#22c55e', '#f97316', '#8b5cf6', '#6366f1', '#6b7280', '#6b7280'];
+const STATE_COLORS = ['#93641E', '#3E6B43', '#A23A34', '#93641E', '#2B6C93', '#7A776D', '#7A776D'];
 const DONE_STATES = [STATE.COMPLETED, STATE.CANCELLED, STATE.SELLER_CLAIMED];
 
 const short  = (a) => a ? `${a.slice(0,6)}...${a.slice(-4)}` : '—';
@@ -146,26 +154,139 @@ async function uploadToPinata(file) {
 
 const NAVBAR_H = 64;
 
-function LandingCards() {
+// Tiêu đề hero tách từng chữ, mỗi chữ "nét dần" (mờ + hơi lệch xuống + blur)
+// bay vào lần lượt — chỉ chạy 1 lần lúc trang tải, không phụ thuộc cuộn.
+function SplitTitle({ text, className = '' }) {
+  return (
+    <div className={className} aria-label={text}>
+      {text.split('').map((ch, i) => (
+        <span
+          key={i}
+          className="split-letter"
+          style={{ animationDelay: `${140 + i * 45}ms` }}
+          aria-hidden="true"
+        >
+          {ch === ' ' ? ' ' : ch}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function Reveal({ as: Tag = 'div', className = '', delay = 0, interactive = false, children, ...rest }) {
   const ref = useRef(null);
+  const raf = useRef(null);
   useEffect(() => {
-    if (!ref.current) return;
-    const cards = ref.current.querySelectorAll('.why-card');
+    const el = ref.current;
+    if (!el) return;
     const io = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-    }, { threshold: 0.1 });
-    cards.forEach(c => io.observe(c));
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          el.style.transitionDelay = `${delay}ms`;
+          el.classList.add('reveal-visible');
+          io.unobserve(el);
+        }
+      });
+    }, { threshold: 0.12 });
+    io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [delay]);
+
+  // interactive=true: thẻ nghiêng theo hướng con trỏ chuột (tilt 3D) + có
+  // vệt sáng "sheen" di theo chuột. Chỉ set inline style khi hover, còn lại
+  // để CSS class .reveal/.reveal-visible điều khiển trạng thái cuộn-hiện.
+  const onMouseMove = !interactive ? undefined : (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    const rx = (0.5 - py) * 10;
+    const ry = (px - 0.5) * 10;
+    if (raf.current) cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => {
+      el.style.transform = `perspective(800px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+      el.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
+      el.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+    });
+  };
+  const onMouseLeave = !interactive ? undefined : () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.transform = '';
+  };
 
   return (
-      <div ref={ref} style={{width:'100%', maxWidth:'1100px', display:'flex', flexDirection:'column', alignItems:'center'}}>
+    <Tag
+      ref={ref}
+      className={`reveal ${interactive ? 'reveal-tilt' : ''} ${className}`}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      {...rest}
+    >
+      {interactive && <span className="tilt-sheen" />}
+      {children}
+    </Tag>
+  );
+}
+
+// Nút "hút" theo con trỏ chuột khi rê gần — giống nam châm. Bọc quanh nút
+// CTA chính, không đụng tới các nút chức năng khác trong app.
+function Magnetic({ children, strength = 0.4, className = '' }) {
+  const ref = useRef(null);
+  const raf = useRef(null);
+  const onMouseMove = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const relX = e.clientX - (rect.left + rect.width / 2);
+    const relY = e.clientY - (rect.top + rect.height / 2);
+    if (raf.current) cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => {
+      el.style.transform = `translate(${(relX * strength).toFixed(1)}px, ${(relY * strength).toFixed(1)}px)`;
+    });
+  };
+  const onMouseLeave = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.transform = 'translate(0,0)';
+  };
+  return (
+    <span ref={ref} className={`magnetic ${className}`} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
+      {children}
+    </span>
+  );
+}
+
+const WHY_ITEMS = [
+  { icon:'LockIcon',  title:'No Trusted Third Party',      desc:'Code is the only arbiter. No platform can freeze funds, take fees, or reverse decisions.' },
+  { icon:'ShieldIcon',title:'Scam-Resistant by Design',    desc:'Both parties post a 20% deposit before activation. Scammers have real skin in the game.' },
+  { icon:'ClockIcon', title:'Time-Locked Auto-Resolution', desc:'Disputes auto-resolve in 72 hours. Shipping claims close in 17 days. Zero deadlock.' },
+  { icon:'ChatIcon',  title:'Built-in Evidence Chat',      desc:'Real-time chat with IPFS image uploads. Every claim backed by immutable, on-chain proof.' },
+  { icon:'PackageIcon',title:'GHN Delivery Built-in',      desc:'Create a real GHN shipping order directly inside the app. Buyer gets a tracking link via email instantly.' },
+  { icon:'MailIcon',  title:'Email Notifications',         desc:'Both parties get email alerts at every key event: payment received, item shipped, delivery confirmed, dispute raised.' },
+  { icon:'StarIcon',  title:'Buyer & Seller Reviews',      desc:'Rate your counterpart after every completed deal. Reviews are signature-verified against on-chain deal state — no fake ratings.' },
+  { icon:'CoinIcon',  title:'Zero Platform Fees',          desc:'No subscription, no listing fee, no commission. You pay only Ethereum gas.' },
+];
+
+const HOW_STEPS = [
+  { num:'①', label:'Deploy',   desc:'Seller sets item & price, uploads photo to IPFS, pays 20% deposit' },
+  { num:'②', label:'Share',    desc:'Copy contract link and send to buyer' },
+  { num:'③', label:'Join',     desc:'Buyer inspects item, pays price + 20% deposit' },
+  { num:'④', label:'Ship',     desc:'Seller creates GHN order in-app — buyer gets email + tracking link' },
+  { num:'⑤', label:'Confirm',  desc:'Buyer confirms delivery — funds released instantly to seller' },
+  { num:'⑥', label:'Dispute?', desc:'Cancel or return request — 72h auto-resolve, both get email alerts' },
+];
+
+function LandingCards() {
+  return (
+      <div style={{width:'100%', maxWidth:'1100px', display:'flex', flexDirection:'column', alignItems:'center'}}>
       <div className="scroll-sep"><span>SCROLL</span><span className="scroll-arrow">↓</span></div>
       <div className="landing-section">
-        <div className="landing-section-label">About</div>
+        <Reveal className="landing-section-label">About</Reveal>
         <div className="about-bento">
-          <div className="about-cell wide">
-            <span className="about-icon">⛓️</span>
+          <Reveal as="div" className="about-cell wide" interactive>
+            <ChainIcon className="about-icon" size={28} />
             <div className="about-cell-title">What is EscrowMAD?</div>
             <div className="about-cell-body">
               EscrowMAD is a fully on-chain escrow protocol for peer-to-peer transactions on Ethereum Sepolia.
@@ -174,9 +295,9 @@ function LandingCards() {
               Every action — shipping, cancellation, dispute — is time-locked and verifiable on-chain forever.
               Built-in <strong>GHN delivery integration</strong> and <strong>email notifications</strong> complete the full transaction lifecycle.
             </div>
-          </div>
-          <div className="about-cell">
-            <span className="about-icon">🛒</span>
+          </Reveal>
+          <Reveal as="div" className="about-cell" delay={80} interactive>
+            <CartIcon className="about-icon" size={28} />
             <div className="about-cell-title">For Buyers</div>
             <div className="about-cell-body">
               Inspect item details and verify the seller's deposit before paying a single wei.
@@ -184,9 +305,9 @@ function LandingCards() {
               Built-in chat with IPFS image proofs keeps every dispute resolvable.
               Get <strong>email alerts</strong> the moment your item ships, with a <strong>GHN tracking link</strong> sent directly to your inbox.
             </div>
-          </div>
-          <div className="about-cell">
-            <span className="about-icon">🏷️</span>
+          </Reveal>
+          <Reveal as="div" className="about-cell" delay={140} interactive>
+            <TagIcon className="about-icon" size={28} />
             <div className="about-cell-title">For Sellers</div>
             <div className="about-cell-body">
               Deploy a contract in seconds — set price, upload an item photo to IPFS, share a link.
@@ -195,61 +316,50 @@ function LandingCards() {
               Create a real <strong>GHN shipping order directly inside the app</strong> — no switching tabs.
               Receive <strong>email notifications</strong> at every key milestone: buyer joined, delivery confirmed, dispute raised.
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
       <hr className="landing-divider" style={{marginTop:'4rem'}} />
       <div className="scroll-sep"><span>SCROLL</span><span className="scroll-arrow">↓</span></div>
       <div className="landing-section">
-        <div className="landing-section-label">Why EscrowMAD?</div>
+        <Reveal className="landing-section-label">Why EscrowMAD?</Reveal>
         <div className="why-grid">
-          {[
-            { icon:'🔒', title:'No Trusted Third Party',      desc:'Code is the only arbiter. No platform can freeze funds, take fees, or reverse decisions.' },
-            { icon:'🛡️', title:'Scam-Resistant by Design',    desc:'Both parties post a 20% deposit before activation. Scammers have real skin in the game.' },
-            { icon:'⏱️', title:'Time-Locked Auto-Resolution', desc:'Disputes auto-resolve in 72 hours. Shipping claims close in 17 days. Zero deadlock.' },
-            { icon:'💬', title:'Built-in Evidence Chat',      desc:'Real-time chat with IPFS image uploads. Every claim backed by immutable, on-chain proof.' },
-            { icon:'📦', title:'GHN Delivery Built-in',       desc:'Create a real GHN shipping order directly inside the app. Buyer gets a tracking link via email instantly.' },
-            { icon:'📧', title:'Email Notifications',         desc:'Both parties get email alerts at every key event: payment received, item shipped, delivery confirmed, dispute raised.' },
-            { icon:'💸', title:'Zero Platform Fees',          desc:'No subscription, no listing fee, no commission. You pay only Ethereum gas.' },
-          ].map(({ icon, title, desc }) => (
-            <div key={title} className="why-card">
-              <span className="why-card-icon">{icon}</span>
-              <div className="why-card-title">{title}</div>
-              <div className="why-card-desc">{desc}</div>
-            </div>
-          ))}
+          {WHY_ITEMS.map(({ icon, title, desc }, i) => {
+            const Icon = WHY_ICONS[icon];
+            return (
+              <Reveal as="div" className="why-card" key={title} delay={(i % 4) * 60} interactive>
+                <Icon className="why-card-icon" size={24} />
+                <div className="why-card-title">{title}</div>
+                <div className="why-card-desc">{desc}</div>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
       <hr className="landing-divider" style={{marginTop:'4rem'}} />
       <div className="scroll-sep"><span>SCROLL</span><span className="scroll-arrow">↓</span></div>
       <div className="landing-section">
-        <div className="landing-section-label">How to Use</div>
+        <Reveal className="landing-section-label">How to Use</Reveal>
         <div className="tl-track">
-          {[
-            { num:'①', label:'Deploy',   desc:'Seller sets item & price, uploads photo to IPFS, pays 20% deposit' },
-            { num:'②', label:'Share',    desc:'Copy contract link and send to buyer' },
-            { num:'③', label:'Join',     desc:'Buyer inspects item, pays price + 20% deposit' },
-            { num:'④', label:'Ship',     desc:'Seller creates GHN order in-app — buyer gets email + tracking link' },
-            { num:'⑤', label:'Confirm',  desc:'Buyer confirms delivery — funds released instantly to seller' },
-            { num:'⑥', label:'Dispute?', desc:'Cancel or return request — 72h auto-resolve, both get email alerts' },
-
-          ].map(({ num, label, desc }) => (
-            <div key={label} className="tl-step">
+          {HOW_STEPS.map(({ num, label, desc }, i) => (
+            <Reveal as="div" className="tl-step" key={label} delay={i * 70}>
               <div className="tl-num">{num}</div>
               <div className="tl-label">{label}</div>
               <div className="tl-desc">{desc}</div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
-      <div className="landing-footer-cta">
+      <Reveal as="div" className="landing-footer-cta">
         <div className="footer-glow" />
         <h2 className="footer-cta-title">Ready to transact<br/>without trust?</h2>
         <p className="footer-cta-sub">Connect your wallet. Deploy your first escrow in under 60 seconds.</p>
         <div style={{marginTop:'1.5rem', display:'flex', justifyContent:'center', alignItems:'center'}}>
-          <ConnectButton label="Connect Wallet" />
+          <Magnetic strength={0.35}>
+            <ConnectButton label="Connect Wallet" />
+          </Magnetic>
         </div>
-      </div>
+      </Reveal>
       <div className="landing-footer-bottom">
         © 2025 EscrowMAD &nbsp;·&nbsp; Built on Ethereum Sepolia &nbsp;·&nbsp; Trustless by design
       </div>
@@ -316,6 +426,44 @@ function HomeInner() {
   const chatImgRef       = useRef(null);
   const deployImgRef = useRef(null);
   const contractAddress = contractAddr || null;
+
+  // Nền hero phản ứng nhẹ theo chuột (mouse parallax) — chỉ áp dụng cho
+  // khối .landing-orbs, các orb con vẫn tự trôi độc lập bằng CSS animation
+  // riêng nên không xung đột transform.
+  const orbsRef = useRef(null);
+  useEffect(() => {
+    let raf = null;
+    let tx = 0, ty = 0;
+    const onMove = (e) => {
+      if (!orbsRef.current) return;
+      const nx = (e.clientX / window.innerWidth - 0.5);
+      const ny = (e.clientY / window.innerHeight - 0.5);
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        tx += (nx * 26 - tx) * 0.08;
+        ty += (ny * 26 - ty) * 0.08;
+        if (orbsRef.current) orbsRef.current.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0)`;
+        raf = null;
+      });
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => { window.removeEventListener('mousemove', onMove); if (raf) cancelAnimationFrame(raf); };
+  }, []);
+
+  // Spotlight: vùng sáng nhỏ đi theo chuột trong khu vực hero, giống cầm
+  // đèn pin soi trên nền tối. Chỉ tính toạ độ, không re-render React.
+  const heroRef = useRef(null);
+  const spotlightRef = useRef(null);
+  const handleHeroMove = (e) => {
+    const hero = heroRef.current, el = spotlightRef.current;
+    if (!hero || !el) return;
+    const rect = hero.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    el.style.background = `radial-gradient(480px circle at ${x}px ${y}px, rgba(255,255,255,0.16), transparent 62%)`;
+  };
+  const showSpotlight = () => { if (spotlightRef.current) spotlightRef.current.style.opacity = '1'; };
+  const hideSpotlight = () => { if (spotlightRef.current) spotlightRef.current.style.opacity = '0'; };
 
   useEffect(() => {
     const c = searchParams.get('contract');
@@ -607,20 +755,7 @@ useEffect(() => {
   return (
     <div className={isDark ? 'theme-dark' : 'theme-light'} style={{minHeight:'100vh', position:'relative'}}>
       <style>{`
-        :root { --font-mono: var(--font-mono, 'Space Mono', monospace); --font-display: var(--font-syne, 'Syne', sans-serif); --navbar-h: ${NAVBAR_H}px; --accent: #7c3aed; --accent2: #06b6d4; --danger: #ef4444; --success: #22c55e; --warn: #f97316; --radius: 10px; }
-        .theme-dark { --bg: #0a0a0f; --surface: #0e0e15; --surface-2: #131320; --border: #1c1c28; --text: #e7e7f2; --muted: #6b6b8a; --navbar-bg: rgba(8,8,12,0.92); --grid-color: #16161f; --grid-opacity: 0.5; --input-bg: #0a0a0f; background: #0a0a0f; color: #e7e7f2; }
-        .theme-light { --bg: #f6f7fb; --surface: #ffffff; --surface-2: #fbfbfe; --border: #e3e6ef; --text: #15161f; --muted: #6b7280; --navbar-bg: rgba(246,247,251,0.92); --grid-color: #e8eaf2; --grid-opacity: 0.7; --input-bg: #fbfbfe; background: #f6f7fb; color: #15161f; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: transparent; color: var(--text); font-family: var(--font-display); min-height: 100vh; transition: background 0.25s, color 0.25s; -webkit-font-smoothing: antialiased; }
-        .theme-dark::before, .theme-light::before { content: ''; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 44px 44px; opacity: var(--grid-opacity); z-index: -1; }
-        .theme-toggle { background: transparent; border: none; cursor: pointer; font-size: 1.15rem; line-height: 1; padding: 0.4rem; border-radius: 8px; transition: background 0.15s; display: flex; align-items: center; }
-        .theme-toggle:hover { background: rgba(124,58,237,0.08); }
-        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: var(--navbar-bg); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; height: var(--navbar-h); width: 100%; }
-        .nav-left { display: flex; align-items: center; gap: 0.35rem; flex: 1; }
-        .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; font-family: var(--font-display); background: linear-gradient(135deg, #b9a4ff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-right: 1.25rem; white-space: nowrap; }
-        .nav-btn { background: transparent; border: 1px solid transparent; padding: 0.45rem 0.95rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; border-radius: 7px; transition: color 0.15s, background 0.15s, border-color 0.15s; white-space: nowrap; }
-        .nav-btn:hover { color: var(--text); background: rgba(124,58,237,0.07); }
-        .nav-btn.active { color: #b9a4ff; background: rgba(124,58,237,0.1); border-color: rgba(124,58,237,0.25); }
+        :root { --navbar-h: ${NAVBAR_H}px; }
         .nav-panel { position: fixed; top: var(--navbar-h); left: 0; right: 0; z-index: 199; background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.75rem; animation: slideDown 0.18s ease; max-height: calc(100vh - var(--navbar-h)); overflow-y: auto; display: flex; justify-content: center; }
         .panel-form { width: 100%; max-width: 420px; }
         .panel-form-group { display: flex; gap: 2.5rem; width: 100%; max-width: 880px; justify-content: center; }
@@ -629,112 +764,97 @@ useEffect(() => {
         .panel-title { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; margin-bottom: 1.1rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--border); }
         .app { width: 100%; margin: 0 auto; padding: 2rem 2rem 5rem; padding-top: calc(var(--navbar-h) + 2rem); }
         .app-inner { max-width: 760px; margin: 0 auto; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem 1.5rem; margin-bottom: 1rem; position: relative; z-index: 1; }
-        .card-title { font-size: 0.66rem; font-family: var(--font-mono); letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; margin-bottom: 1rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--border); }
         .info-row { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
         .info-row:last-child { border-bottom: none; }
         .info-label { font-size: 0.74rem; color: var(--muted); font-family: var(--font-mono); }
         .info-value { font-size: 0.86rem; font-weight: 600; color: var(--text); }
-        .mono { font-family: var(--font-mono); font-size: 0.78rem !important; }
-        .you-badge { display: inline-block; padding: 0.13rem 0.45rem; border-radius: 4px; font-size: 0.6rem; font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.04em; margin-left: 0.4rem; background: rgba(124,58,237,0.16); color: #b9a4ff; border: 1px solid rgba(124,58,237,0.28); }
-        .state-badge { display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.45rem 1.05rem; border-radius: 999px; font-size: 0.72rem; font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.12em; border: 1px solid currentColor; margin-bottom: 1.25rem; }
+        .you-badge { display: inline-block; padding: 0.13rem 0.45rem; border-radius: 4px; font-size: 0.6rem; font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.04em; margin-left: 0.4rem; background: var(--accent2-bg); color: var(--accent2); border: 1px solid var(--accent2); }
+        .state-badge { display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.45rem 1.05rem; border-radius: 999px; font-size: 0.72rem; font-family: var(--font-mono); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid currentColor; margin-bottom: 1.25rem; }
         .state-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
         .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-top: 0.7rem; }
         .actions.single { grid-template-columns: 1fr; }
-        .btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; padding: 0.7rem 1rem; border-radius: 8px; font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: background 0.15s, border-color 0.15s, opacity 0.15s; border: 1px solid transparent; }
-        .btn:disabled { opacity: 0.38; cursor: not-allowed; }
-        .btn-primary   { background: var(--accent);  color: #fff; border-color: var(--accent); }
-        .btn-primary:hover:not(:disabled)   { background: #6d28d9; }
-        .btn-secondary { background: transparent; color: var(--accent2); border-color: var(--accent2); }
-        .btn-secondary:hover:not(:disabled) { background: rgba(6,182,212,0.08); }
-        .btn-danger    { background: transparent; color: var(--danger); border-color: var(--danger); }
-        .btn-danger:hover:not(:disabled)    { background: rgba(239,68,68,0.08); }
-        .btn-success   { background: var(--success); color: #fff; border-color: var(--success); }
-        .btn-success:hover:not(:disabled)   { background: #16a34a; }
-        .btn-warn      { background: transparent; color: var(--warn); border-color: var(--warn); }
-        .btn-warn:hover:not(:disabled)      { background: rgba(249,115,22,0.08); }
-        .btn-shipped   { background: rgba(6,182,212,0.1); color: var(--accent2); border-color: var(--accent2); }
-        .btn-shipped:hover:not(:disabled)   { background: rgba(6,182,212,0.16); }
-        .btn-shipped.done { opacity: 0.55; cursor: default; }
-        .btn-claim-locked { opacity: 0.32; cursor: not-allowed; background: transparent; color: var(--accent2); border-color: var(--accent2); }
-        .btn-icon { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; color: var(--muted); cursor: pointer; transition: border-color 0.15s, color 0.15s; font-size: 0.95rem; line-height: 1; }
-        .btn-icon:hover:not(:disabled) { border-color: var(--accent); color: #b9a4ff; }
-        .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
-        .btn-sub { font-size: 0.6rem; opacity: 0.7; font-weight: 400; }
-        .btn-label { display: flex; align-items: center; gap: 0.35rem; }
-        .spinner { width: 11px; height: 11px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .status-bar { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.25); border-radius: 8px; padding: 0.65rem 1rem; font-family: var(--font-mono); font-size: 0.76rem; color: #b9a4ff; margin-bottom: 1rem; text-align: center; }
-        .input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; color: var(--text); font-family: var(--font-mono); font-size: 0.8rem; outline: none; transition: border-color 0.15s; margin-bottom: 0.55rem; }
-        .input:focus { border-color: var(--accent); }
-        .input::placeholder { color: var(--muted); }
-        .no-role { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.78rem; font-family: var(--font-mono); }
-        .timeout-bar { margin-top: 0.7rem; padding: 0.55rem 0.7rem; border-radius: 8px; background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.18); font-family: var(--font-mono); font-size: 0.72rem; color: var(--warn); display: flex; justify-content: space-between; }
+        .status-bar { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 1rem; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text); margin-bottom: 1rem; text-align: center; }
+        .timeout-bar { margin-top: 0.7rem; padding: 0.55rem 0.7rem; border-radius: 8px; background: var(--warn-bg); border: 1px solid var(--warn); font-family: var(--font-mono); font-size: 0.72rem; color: var(--warn); display: flex; justify-content: space-between; }
         .share-row { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
         .share-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.7rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .load-contract { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
         .load-contract .input { margin-bottom: 0; flex: 1; }
-        .evidence-notice { background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.18); border-radius: 8px; padding: 0.6rem 0.7rem; font-family: var(--font-mono); font-size: 0.72rem; color: #b9a4ff; margin-bottom: 0.7rem; }
-        .etherscan-link { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); text-decoration: none; transition: color 0.15s; }
-        .etherscan-link:hover { color: var(--accent2); }
-        .back-btn { background: transparent; border: none; color: var(--muted); font-family: var(--font-mono); font-size: 0.76rem; cursor: pointer; padding: 0; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.3rem; transition: color 0.15s; }
-        .back-btn:hover { color: var(--text); }
-        .deploy-note { font-size: 0.74rem; font-family: var(--font-mono); color: var(--muted); margin-bottom: 0.7rem; padding: 0.5rem 0.7rem; background: rgba(6,182,212,0.05); border: 1px solid rgba(6,182,212,0.15); border-radius: 8px; }
-        .landing-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-        .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.12; }
-        .orb-1 { width: 700px; height: 700px; background: radial-gradient(circle, #7c3aed, transparent 70%); top: -200px; left: -150px; }
-        .orb-2 { width: 600px; height: 600px; background: radial-gradient(circle, #06b6d4, transparent 70%); bottom: -100px; right: -100px; }
-        .orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #b9a4ff, transparent 70%); top: 45%; left: 52%; }
+        .evidence-notice { background: var(--warn-bg); border: 1px solid var(--warn); border-radius: 8px; padding: 0.6rem 0.7rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--warn); margin-bottom: 0.7rem; }
+        .etherscan-link { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); text-decoration: none; transition: color 0.15s; display: inline-flex; align-items: center; gap: 0.3rem; }
+        .etherscan-link:hover { color: var(--text); }
+        .deploy-note { font-size: 0.74rem; font-family: var(--font-mono); color: var(--muted); margin-bottom: 0.7rem; padding: 0.5rem 0.7rem; background: var(--accent2-bg); border: 1px solid var(--accent2); border-radius: 8px; }
+        .landing-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; will-change: transform; }
+        .orb { position: absolute; border-radius: 50%; filter: blur(100px); }
+        .orb-1 { width: 800px; height: 800px; background: radial-gradient(circle, var(--text), transparent 70%); top: -250px; left: -200px; opacity: 0.05; animation: driftOrb 22s ease-in-out infinite alternate; }
+        .orb-2 { width: 620px; height: 620px; background: radial-gradient(circle, var(--accent2), transparent 70%); bottom: -220px; right: -160px; opacity: 0.07; animation: driftOrb2 30s ease-in-out infinite alternate; }
+        @keyframes driftOrb { from { transform: translate(0,0) scale(1); } to { transform: translate(50px, 35px) scale(1.06); } }
+        @keyframes driftOrb2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-45px, -30px) scale(1.08); } }
         .connect-prompt { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 3rem; width: 100%; min-height: calc(100vh - var(--navbar-h)); justify-content: center; padding-bottom: 4rem; }
-        .connect-logo { width: 180px; height: 180px; object-fit: contain; margin-bottom: 1.75rem; filter: drop-shadow(0 0 50px rgba(167,139,250,0.35)); animation: logoIn 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+        .connect-logo { width: 160px; height: 160px; object-fit: contain; margin-bottom: 1.75rem; filter: drop-shadow(0 8px 30px rgba(0,0,0,0.06)); animation: logoIn 0.7s cubic-bezier(0.22,1,0.36,1) both; }
         @keyframes logoIn { from{opacity:0;transform:scale(0.85) translateY(14px)} to{opacity:1;transform:scale(1) translateY(0)} }
-        .connect-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.22em; color: var(--accent2); text-transform: uppercase; display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.75rem; animation: fadeUpL 0.6s 0.05s ease both; }
-        .eyebrow-line { width: 32px; height: 1px; background: var(--accent2); opacity: 0.4; }
-        .connect-title { font-size: clamp(3rem, 8vw, 6rem); font-weight: 800; letter-spacing: -0.035em; line-height: 0.97; margin-bottom: 1.4rem; font-family: var(--font-display); color: var(--text); animation: fadeUpL 0.6s 0.12s ease both; }
+        .connect-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.75rem; animation: fadeUpL 0.6s 0.05s ease both; }
+        .eyebrow-line { width: 32px; height: 1px; background: var(--muted); opacity: 0.4; }
+        .connect-title { display: flex; flex-wrap: wrap; justify-content: center; font-size: clamp(3.2rem, 8vw, 6.2rem); font-weight: 400; letter-spacing: -0.03em; line-height: 0.98; margin-bottom: 1.4rem; font-family: var(--font-serif); color: var(--text); }
+        .split-letter { display: inline-block; opacity: 0; filter: blur(6px); transform: translateY(22px); animation: letterIn 0.65s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes letterIn { to { opacity: 1; filter: blur(0); transform: translateY(0); } }
         .connect-sub { font-family: var(--font-mono); font-size: 0.95rem; color: var(--muted); max-width: 540px; line-height: 1.8; margin-bottom: 0.8rem; animation: fadeUpL 0.6s 0.22s ease both; }
         .connect-sub strong { color: var(--text); font-weight: 700; }
         .connect-cta { margin-bottom: 4rem; animation: fadeUpL 0.6s 0.32s ease both; margin-top: 0.5rem; }
         @keyframes fadeUpL { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        .reveal { opacity: 0; transform: translateY(16px); transition: opacity 700ms cubic-bezier(0.16,1,0.3,1), transform 700ms cubic-bezier(0.16,1,0.3,1); }
+        .reveal-visible { opacity: 1; transform: translateY(0); }
+        @media (prefers-reduced-motion: reduce) {
+          .reveal { opacity: 1; transform: none; transition: none; }
+        }
+        /* Tilt 3D + sheen — thẻ nghiêng theo chuột, có vệt sáng chạy theo con trỏ */
+        .reveal-tilt { position: relative; transform-style: preserve-3d; will-change: transform; }
+        .reveal-tilt.reveal-visible { transition: opacity 700ms cubic-bezier(0.16,1,0.3,1), transform 150ms ease-out; }
+        .tilt-sheen { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 2; border-radius: inherit; transition: opacity 0.35s ease; mix-blend-mode: overlay; background: radial-gradient(circle at var(--mx,50%) var(--my,50%), #ffffff, transparent 60%); }
+        .reveal-tilt:hover .tilt-sheen { opacity: 0.55; }
+        /* Nút hút theo chuột (magnetic) */
+        .magnetic { display: inline-block; transition: transform 0.2s cubic-bezier(0.16,1,0.3,1); will-change: transform; }
+        /* Vùng sáng theo chuột trên nền hero tối */
+        .hero-spotlight { position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: 0; mix-blend-mode: soft-light; transition: opacity 0.4s ease; }
         .scroll-sep { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 2rem 0 0.5rem; width: 100%; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; opacity: 0.45; }
         .scroll-sep .scroll-arrow { font-size: 0.8rem; }
         .landing-divider { border: none; border-top: 1px solid var(--border); width: 90%; max-width: 1100px; margin: 0 auto; }
         .landing-section { width: 90%; max-width: 1100px; padding: 4rem 0 0; text-align: left; }
-        .landing-section-label { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.24em; color: var(--accent2); text-transform: uppercase; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
-        .landing-section-label::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(6,182,212,0.25),transparent); }
-        .about-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+        .landing-section-label { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.24em; color: var(--muted); text-transform: uppercase; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
+        .landing-section-label::after { content:''; flex:1; height:1px; background: var(--border); }
+        .about-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
         .about-cell { background: var(--surface); padding: 2rem; transition: background 0.2s; }
         .about-cell:hover { background: var(--surface-2); }
         .about-cell.wide { grid-column: 1/-1; }
-        .about-icon { font-size: 1.7rem; margin-bottom: 1rem; display: block; }
+        .about-icon { width: 28px; height: 28px; margin-bottom: 1rem; display: block; color: var(--text); }
         .about-cell-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.6rem; font-family: var(--font-display); }
         .about-cell-body { font-family: var(--font-mono); font-size: 0.86rem; color: var(--muted); line-height: 1.85; }
         .about-cell-body strong { color: var(--text); font-weight: 700; }
-        .why-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .why-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
         .why-card { background: var(--surface); padding: 1.6rem 1.4rem; transition: background 0.2s; }
         .why-card:hover { background: var(--surface-2); }
-        .why-card-icon  { font-size:1.6rem; display:block; margin-bottom:0.85rem; }
+        .why-card-icon  { width: 24px; height: 24px; display:block; margin-bottom:0.85rem; color: var(--text); }
         .why-card-title { font-size:0.98rem; font-weight:700; color:var(--text); margin-bottom:0.4rem; font-family: var(--font-display); }
         .why-card-desc  { font-family:var(--font-mono); font-size:0.8rem; color:var(--muted); line-height:1.7; }
         .tl-track { display:grid; grid-template-columns:repeat(6,1fr); gap:0; position:relative; }
-        .tl-track::before { content:''; position:absolute; top:23px; left:calc(100%/12); right:calc(100%/12); height:1px; background:linear-gradient(90deg,transparent,rgba(167,139,250,0.3) 15%,rgba(6,182,212,0.3) 85%,transparent); z-index:0; }
+        .tl-track::before { content:''; position:absolute; top:23px; left:calc(100%/12); right:calc(100%/12); height:1px; background: var(--border); z-index:0; }
         .tl-step { display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 0.5rem; position:relative; z-index:1; }
-        .tl-num { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.95rem; font-weight:700; color:var(--accent); background:var(--surface); border:1.5px solid rgba(167,139,250,0.25); margin-bottom:0.9rem; transition:border-color 0.2s, color 0.2s; }
-        .tl-step:hover .tl-num { border-color:var(--accent); color: #b9a4ff; }
+        .tl-num { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.9rem; font-weight:700; color:var(--text); background:var(--surface); border:1.5px solid var(--border); margin-bottom:0.9rem; transition:border-color 0.2s; }
+        .tl-step:hover .tl-num { border-color: var(--text); }
         .tl-label { font-size:0.88rem; font-weight:700; color:var(--text); margin-bottom:0.35rem; font-family:var(--font-mono); }
         .tl-desc  { font-size:0.76rem; color:var(--muted); line-height:1.55; font-family:var(--font-mono); }
         .landing-footer-cta { text-align:center; padding:5rem 0 4rem; position:relative; width:100%; display:flex; flex-direction:column; align-items:center; }
-        .footer-glow { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:600px; height:300px; background:radial-gradient(ellipse,rgba(124,58,237,0.1),transparent 70%); pointer-events:none; }
-        .footer-cta-title { font-size:clamp(2.2rem,4.5vw,3.4rem); font-weight:800; letter-spacing:-0.03em; margin-bottom:1rem; line-height:1.12; position:relative; font-family: var(--font-display); color: var(--text); }
+        .footer-glow { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:600px; height:300px; background:radial-gradient(ellipse,var(--muted),transparent 70%); opacity: 0.05; pointer-events:none; }
+        .footer-cta-title { font-size:clamp(2.2rem,4.5vw,3.4rem); font-weight:400; letter-spacing:-0.02em; margin-bottom:1rem; line-height:1.12; position:relative; font-family: var(--font-serif); color: var(--text); }
         .footer-cta-sub { font-family:var(--font-mono); font-size:0.92rem; color:var(--muted); margin-bottom:2.25rem; position:relative; }
         .landing-footer-bottom { font-family:var(--font-mono); font-size:0.7rem; color:var(--muted); letter-spacing:0.06em; padding:1.5rem 0 2rem; border-top:1px solid var(--border); width:100%; text-align:center; }
         .chat-messages { max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; padding-right: 0.25rem; }
         .chat-messages::-webkit-scrollbar { width: 4px; }
         .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
         .chat-msg { padding: 0.5rem 0.75rem; border-radius: 8px; max-width: 80%; }
-        .chat-msg.mine   { align-self: flex-end; background: rgba(124,58,237,0.13); border: 1px solid rgba(124,58,237,0.22); }
+        .chat-msg.mine   { align-self: flex-end; background: var(--success-bg); border: 1px solid var(--success); }
         .chat-msg.other  { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); }
-        .chat-msg.system { align-self: center; max-width: 95%; width: 100%; background: rgba(6,182,212,0.05); border: 1px solid rgba(6,182,212,0.18); text-align: center; border-radius: 8px; }
+        .chat-msg.system { align-self: center; max-width: 95%; width: 100%; background: var(--accent2-bg); border: 1px solid var(--accent2); text-align: center; border-radius: 8px; }
         .chat-meta { font-size: 0.6rem; font-family: var(--font-mono); color: var(--muted); margin-bottom: 0.2rem; }
         .chat-text { font-size: 0.8rem; color: var(--text); word-break: break-word; }
         .chat-text.system-text { color: var(--accent2); font-size: 0.75rem; font-family: var(--font-mono); }
@@ -792,7 +912,7 @@ useEffect(() => {
         </div>
         <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
           <button className="theme-toggle" onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
-            {isDark ? '☀️' : '🌙'}
+            {isDark ? <SunIcon size={15}/> : <MoonIcon size={15}/>}
           </button>
           {isConnected && <ConnectButton chainStatus="icon" showBalance={false} />}
         </div>
@@ -807,13 +927,13 @@ useEffect(() => {
               <input className="input" placeholder="Item description (e.g. iPhone 15 Pro 256GB)" value={deployDesc} onChange={e => setDeployDesc(e.target.value)} />
               <input className="input" placeholder="Item price in ETH (e.g. 0.005)" value={deployPrice} onChange={e => setDeployPrice(e.target.value)} />
               <input className="input" placeholder="Your email for order notifications" value={deployEmail} onChange={e => setDeployEmail(e.target.value)} />
-              <div style={{fontFamily:'var(--font-mono)', fontSize:'0.7rem', color:'var(--muted)', marginBottom:'0.6rem', padding:'0.4rem 0.6rem', background:'rgba(6,182,212,0.06)', border:'1px solid rgba(6,182,212,0.15)', borderRadius:'6px'}}>
-                📧 This email will be used for order event notifications only.
+              <div style={{fontFamily:'var(--font-mono)', fontSize:'0.7rem', color:'var(--accent2)', marginBottom:'0.6rem', padding:'0.4rem 0.6rem', background:'var(--accent2-bg)', border:'1px solid var(--accent2)', borderRadius:'6px', display:'flex', alignItems:'center', gap:'0.35rem'}}>
+                <MailIcon size={13}/> This email will be used for order event notifications only.
               </div>
 
               <div style={{marginBottom:'0.6rem'}}>
-                 <label style={{fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--muted)', display:'block', marginBottom:'0.4rem'}}>
-                 📸 Item photo (optional, uploaded to IPFS)
+                 <label style={{fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--muted)', display:'flex', alignItems:'center', gap:'0.35rem', marginBottom:'0.4rem'}}>
+                 <CameraIcon size={13}/> Item photo (optional, uploaded to IPFS)
               </label>
                <input
                       type="file"
@@ -842,7 +962,7 @@ useEffect(() => {
       onClick={() => deployImgRef.current?.click()}
       disabled={deployUploading}
     >
-      {deployUploading ? <><span className="spinner" /> Uploading...</> : deployImgHash ? '✓ Photo uploaded' : '📁 Choose photo'}
+      {deployUploading ? <><span className="spinner" /> Uploading...</> : deployImgHash ? <><CheckIcon size={13}/> Photo uploaded</> : <><FolderIcon size={13}/> Choose photo</>}
     </button>
     {deployImgHash && (
       <img
@@ -880,22 +1000,32 @@ useEffect(() => {
       {/* Main */}
       <div className="app">
         {!isConnected ? (
-          <div className="connect-prompt">
-            <div className="landing-orbs">
-              <div className="orb orb-1" /><div className="orb orb-2" /><div className="orb orb-3" />
+          <div
+            className="connect-prompt"
+            ref={heroRef}
+            onMouseMove={handleHeroMove}
+            onMouseEnter={showSpotlight}
+            onMouseLeave={hideSpotlight}
+          >
+            <div className="landing-orbs" ref={orbsRef}>
+              <div className="orb orb-1" />
+              <div className="orb orb-2" />
             </div>
+            <div className="hero-spotlight" ref={spotlightRef} />
             <div className="connect-eyebrow">
               <span className="eyebrow-line" />Trustless · On-chain · Permissionless<span className="eyebrow-line" />
             </div>
             <img src="/logo.png" alt="EscrowMAD" className="connect-logo" />
-            <div className="connect-title">EscrowMAD</div>
+            <SplitTitle text="EscrowMAD" className="connect-title" />
             <p className="connect-sub">
               Peer-to-peer escrow on Ethereum.<br />
               <strong>No middleman. No arbiter. No trust needed.</strong><br />
               Just code, deposits, and cryptographic finality.
             </p>
             <div className="connect-cta">
-              <ConnectButton label="Connect Wallet to Start" />
+              <Magnetic strength={0.35}>
+                <ConnectButton label="Connect Wallet to Start" />
+              </Magnetic>
             </div>
             <LandingCards />
           </div>
@@ -908,7 +1038,7 @@ useEffect(() => {
 
         ) : !isZero(buyer) && !isSeller && !isBuyer ? (
           <div style={{textAlign:'center', marginTop:'6rem', fontFamily:'var(--font-mono)'}}>
-            <div style={{fontSize:'2rem', marginBottom:'1rem'}}>🔒</div>
+            <div style={{display:'flex', justifyContent:'center', marginBottom:'1rem', color:'var(--muted)'}}><LockIcon size={28}/></div>
             <div style={{fontSize:'1rem', fontWeight:700, color:'var(--text)', marginBottom:'0.5rem'}}>
               This contract is private
             </div>
@@ -916,12 +1046,12 @@ useEffect(() => {
               Both parties have already joined.<br/>
               Only the seller and buyer can view this contract.
             </div>
-            <button className="back-btn" style={{marginTop:'2rem', display:'inline-flex'}} onClick={() => { setContractAddr(''); router.push('/'); }}>← Back</button>
+            <button className="back-btn" style={{marginTop:'2rem', display:'inline-flex'}} onClick={() => { setContractAddr(''); router.push('/'); }}><ArrowLeftIcon size={13}/> Back</button>
           </div>
 
         ) : (
           <div className="app-inner">
-            <button className="back-btn" onClick={() => { setContractAddr(''); router.push('/'); }}>← Back</button>
+            <button className="back-btn" onClick={() => { setContractAddr(''); router.push('/'); }}><ArrowLeftIcon size={13}/> Back</button>
             {stateNum !== null && (
               <div className="state-badge" style={{ color: STATE_COLORS[stateNum] }}>
                 <span className="state-dot" />{STATE_LABELS[stateNum]}
@@ -953,7 +1083,7 @@ useEffect(() => {
 
   <div className="info-row">
     <span className="info-label">Address</span>
-                <a className="etherscan-link mono" href={`https://sepolia.etherscan.io/address/${contractAddress}`} target="_blank" rel="noreferrer">{short(contractAddress)} ↗</a>
+                <a className="etherscan-link mono" href={`https://sepolia.etherscan.io/address/${contractAddress}`} target="_blank" rel="noreferrer">{short(contractAddress)} <ExternalLinkIcon size={11}/></a>
               </div>
               {itemDescription && <div className="info-row"><span className="info-label">Item</span><span className="info-value">{itemDescription}</span></div>}
               <div className="info-row"><span className="info-label">Item Price</span><span className="info-value">{fmt(itemPrice)}</span></div>
@@ -962,7 +1092,7 @@ useEffect(() => {
               {isSeller && stateNum === STATE.AWAITING_BUYER && (
                 <div className="share-row">
                   <input className="share-input" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}?contract=${contractAddress}`} />
-                  <button className="btn btn-secondary" onClick={handleCopyLink}>{copied ? '✓ Copied!' : '📋 Copy Link for Buyer'}</button>
+                  <button className="btn btn-secondary" style={{flexDirection:'row', gap:'0.35rem'}} onClick={handleCopyLink}>{copied ? <><CheckIcon size={13}/> Copied!</> : <><TagIcon size={13}/> Copy Link for Buyer</>}</button>
                 </div>
               )}
             </div>
@@ -998,8 +1128,8 @@ useEffect(() => {
 </select>
 <input className="input" placeholder="Street address (e.g. 72 Nguyễn Trãi)" value={buyerStreet} onChange={e => setBuyerStreet(e.target.value)} />
                   <input className="input" placeholder="Your email for order notifications" value={buyerEmail} onChange={e => setBuyerEmail(e.target.value)} />
-                  <div style={{fontFamily:'var(--font-mono)', fontSize:'0.7rem', color:'var(--muted)', marginBottom:'0.6rem', padding:'0.4rem 0.6rem', background:'rgba(6,182,212,0.06)', border:'1px solid rgba(6,182,212,0.15)', borderRadius:'6px'}}>
-                    📧 This email will be used for order event notifications only.
+                  <div style={{fontFamily:'var(--font-mono)', fontSize:'0.7rem', color:'var(--accent2)', marginBottom:'0.6rem', padding:'0.4rem 0.6rem', background:'var(--accent2-bg)', border:'1px solid var(--accent2)', borderRadius:'6px', display:'flex', alignItems:'center', gap:'0.35rem'}}>
+                    <MailIcon size={13}/> This email will be used for order event notifications only.
                   </div>
                   <button className="btn btn-primary" onClick={handleJoin} disabled={isLoading}>
                     <span className="btn-label">{isLoading && <span className="spinner" />}Join & Send Payment</span>
@@ -1017,7 +1147,7 @@ useEffect(() => {
                           sendEscrowEmail({ toEmail: sellerEmail, recipientName: 'Seller', eventTitle: '✕ Buyer requested cancellation', eventMessage: 'The buyer has requested to cancel this transaction. You can approve or wait for auto-resolution.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                         });
                       }} disabled={isLoading}>
-                        <span className="btn-label">{isLoading && <span className="spinner" />}✕ Cancel</span>
+                        <span className="btn-label">{isLoading && <span className="spinner" />}<CloseIcon size={13}/> Cancel</span>
                       </button>
                     </div>
                   )}
@@ -1025,7 +1155,7 @@ useEffect(() => {
                     <button className={`btn ${shipped ? 'btn-success' : 'btn-claim-locked'}`} onClick={shipped ? handleConfirmDelivery : undefined} disabled={isLoading || !shipped}>
                       <span className="btn-label">
                         {isLoading && shipped && <span className="spinner" />}
-                        ✓ Confirm
+                        <CheckIcon size={13}/> Confirm
                       </span>
                       {!shipped && <span className="btn-sub">Awaiting shipment</span>}
                     </button>
@@ -1035,7 +1165,7 @@ useEffect(() => {
                         sendEscrowEmail({ toEmail: sellerEmail, recipientName: 'Seller', eventTitle: '↩ Buyer requested a return', eventMessage: 'The buyer has requested to return the item. Please review and approve or wait for auto-resolution in 72 hours.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                       });
                     } : undefined} disabled={isLoading || !shipped}>
-                      <span className="btn-label">{isLoading && shipped && <span className="spinner" />}↩ Return</span>
+                      <span className="btn-label">{isLoading && shipped && <span className="spinner" />}<UndoIcon size={13}/> Return</span>
                       {!shipped && <span className="btn-sub">Awaiting shipment</span>}
                     </button>
                   </div>
@@ -1047,7 +1177,7 @@ useEffect(() => {
                   <button className={`btn btn-shipped ${shipped ? 'done' : ''}`}
                      onClick={shipped ? undefined : () => setShowShipModal(true)}
                      disabled={shipped}>
-                    <span className="btn-label">📦 {shipped ? 'Shipped ✓' : 'Mark as Shipped'}</span>
+                    <span className="btn-label"><PackageIcon size={14}/> {shipped ? <>Shipped <CheckIcon size={12}/></> : 'Mark as Shipped'}</span>
                     {shipped && shippedAt && <span className="btn-sub">{fmtDateTime(shippedAt)}</span>}
                   </button>
                   {!shipped && (
@@ -1057,7 +1187,7 @@ useEffect(() => {
                         sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: '✕ Seller requested cancellation', eventMessage: 'The seller has requested to cancel this transaction. You can approve or wait for auto-resolution.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                       });
                     }} disabled={isLoading}>
-                      <span className="btn-label">{isLoading && <span className="spinner" />}✕ Cancel</span>
+                      <span className="btn-label">{isLoading && <span className="spinner" />}<CloseIcon size={13}/> Cancel</span>
                     </button>
                   )}
                   {shipped && (
@@ -1067,7 +1197,7 @@ useEffect(() => {
                         sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: '⏰ Seller claimed funds', eventMessage: 'You did not confirm delivery within the allowed time. The seller has claimed the funds.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                       });
                     } : undefined} disabled={isLoading || !claimReady}>
-                      <span className="btn-label">{isLoading && claimReady && <span className="spinner" />}⏰ Claim</span>
+                      <span className="btn-label">{isLoading && claimReady && <span className="spinner" />}<ClockIcon size={13}/> Claim</span>
                       {!claimReady && claimCountdown ? <span className="btn-sub">{claimCountdown} remaining</span> : <span className="btn-sub">Available now</span>}
                     </button>
                   )}
@@ -1076,7 +1206,7 @@ useEffect(() => {
 
               {stateNum === STATE.CANCEL_REQUESTED && (
                 <>
-                  <div className="evidence-notice">✕ Cancel requested by {isInitiator ? 'you' : short(requestInitiator)}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree to cancel?'}</div>
+                  <div className="evidence-notice"><CloseIcon size={13}/> Cancel requested by {isInitiator ? 'you' : short(requestInitiator)}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree to cancel?'}</div>
                   <div className="actions">
                     {!isInitiator && (
                       <button className="btn btn-danger" onClick={() => {
@@ -1086,12 +1216,12 @@ useEffect(() => {
                           sendEscrowEmail({ toEmail: targetEmail, recipientName: isInitiator ? '' : (isSeller ? 'Buyer' : 'Seller'), eventTitle: '✅ Cancellation approved', eventMessage: 'The cancellation has been approved. Funds have been returned to both parties.', itemDescription: itemDescription, contractAddress: contractAddress, amount: deposit != null ? `${formatEther(deposit)} ETH` : '—' });
                         });
                       }} disabled={isLoading}>
-                        <span className="btn-label">{isLoading && <span className="spinner" />}✓ Approve Cancel</span>
+                        <span className="btn-label">{isLoading && <span className="spinner" />}<CheckIcon size={13}/> Approve Cancel</span>
                       </button>
                     )}
                     {isInitiator && (
                       <button className="btn btn-secondary" onClick={() => tx('withdrawCancelRequest', [], null, '↩ Cancel request withdrawn.')} disabled={isLoading}>
-                        <span className="btn-label">{isLoading && <span className="spinner" />}↩ Withdraw Request</span>
+                        <span className="btn-label">{isLoading && <span className="spinner" />}<UndoIcon size={13}/> Withdraw Request</span>
                       </button>
                     )}
                   </div>
@@ -1100,7 +1230,7 @@ useEffect(() => {
 
               {stateNum === STATE.RETURN_REQUESTED && (
                 <>
-                  <div className="evidence-notice">↩ Return requested by {isInitiator ? 'you' : short(requestInitiator)}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree?'}</div>
+                  <div className="evidence-notice"><UndoIcon size={13}/> Return requested by {isInitiator ? 'you' : short(requestInitiator)}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree?'}</div>
                   <div className="actions single">
                     {!isInitiator && (
                       <button className="btn btn-warn" style={{width:'100%'}} onClick={() => {
@@ -1109,12 +1239,12 @@ useEffect(() => {
                           sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: '✅ Return approved', eventMessage: 'The seller has approved your return request. Funds have been returned to your wallet.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                         });
                       }} disabled={isLoading}>
-                        <span className="btn-label">{isLoading && <span className="spinner" />}✓ Approve Return</span>
+                        <span className="btn-label">{isLoading && <span className="spinner" />}<CheckIcon size={13}/> Approve Return</span>
                       </button>
                     )}
                     {isInitiator && (
                       <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => tx('withdrawReturnRequest', [], null, '↩ Return request withdrawn.')} disabled={isLoading}>
-                        <span className="btn-label">{isLoading && <span className="spinner" />}↩ Withdraw Request</span>
+                        <span className="btn-label">{isLoading && <span className="spinner" />}<UndoIcon size={13}/> Withdraw Request</span>
                       </button>
                     )}
                   </div>
@@ -1122,23 +1252,30 @@ useEffect(() => {
               )}
 
               {stateNum === STATE.COMPLETED && (
-                <div className="no-role">✅ Escrow completed.
-                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700}}>💰 Funds released to your wallet.</div>}
+                <div className="no-role"><CheckIcon size={14}/> Escrow completed.
+                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.35rem'}}><CoinIcon size={13}/> Funds released to your wallet.</div>}
                   {isBuyer  && (
-                    <div style={{marginTop:'0.5rem',color:'var(--accent2)',fontWeight:700}}>📦 Delivery confirmed. Thank you!</div>
+                    <div style={{marginTop:'0.5rem',color:'var(--accent2)',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.35rem'}}><PackageIcon size={13}/> Delivery confirmed. Thank you!</div>
                   )}
                 </div>
               )}
+              {stateNum === STATE.COMPLETED && (isSeller || isBuyer) && (
+                <ReviewPanel
+                  dealAddress={contractAddress}
+                  myAddress={address}
+                  counterpartAddress={isSeller ? buyer : seller}
+                />
+              )}
               {stateNum === STATE.CANCELLED && (
-                <div className="no-role">🚫 Escrow cancelled.
+                <div className="no-role"><CloseIcon size={14}/> Escrow cancelled.
                   {isSeller && <div style={{marginTop:'0.5rem',color:'var(--muted)',fontWeight:700}}>Deposit returned.</div>}
                   {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--muted)',fontWeight:700}}>Payment refunded.</div>}
                 </div>
               )}
               {stateNum === STATE.SELLER_CLAIMED && (
-                <div className="no-role">⏰ Buyer timeout.
-                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700}}>💰 Funds released to your wallet.</div>}
-                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--danger)',fontWeight:700}}>⚠️ Funds claimed by the seller.</div>}
+                <div className="no-role"><ClockIcon size={14}/> Buyer timeout.
+                  {isSeller && <div style={{marginTop:'0.5rem',color:'var(--success)',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.35rem'}}><CoinIcon size={13}/> Funds released to your wallet.</div>}
+                  {isBuyer  && <div style={{marginTop:'0.5rem',color:'var(--danger)',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',gap:'0.35rem'}}><AlertIcon size={13}/> Funds claimed by the seller.</div>}
                 </div>
               )}
             </div>
@@ -1154,7 +1291,7 @@ useEffect(() => {
                     return (
                       <div key={m.id} className={`chat-msg ${isSystem ? 'system' : mine ? 'mine' : 'other'}`}>
                         {!isSystem && <div className="chat-meta">{mine ? 'You' : short(m.sender)} · {fmtDateTime(m.timestamp)}</div>}
-                        {isSystem && <div className="chat-meta" style={{textAlign:'center'}}>🔔 System · {fmtDateTime(m.timestamp)}</div>}
+                        {isSystem && <div className="chat-meta" style={{textAlign:'center', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.25rem'}}><BellIcon size={11}/> System · {fmtDateTime(m.timestamp)}</div>}
                         {m.type === 'image'
                           ? <img src={m.message} alt="shared" className="chat-img" onClick={() => window.open(m.message, '_blank')} />
                           : <div className={`chat-text ${isSystem ? 'system-text' : ''}`}>{m.message}</div>
@@ -1168,7 +1305,7 @@ useEffect(() => {
                   <input className="input" placeholder="Type a message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} />
                   <input ref={chatImgRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleChatImage} />
                   <button className="btn-icon" onClick={() => chatImgRef.current?.click()} disabled={uploadingChat}>
-                    {uploadingChat ? <span className="spinner" style={{borderTopColor:'var(--muted)'}} /> : '🖼️'}
+                    {uploadingChat ? <span className="spinner" style={{borderTopColor:'var(--muted)'}} /> : <ImageIcon size={16}/>}
                   </button>
                   <button className="btn btn-primary" style={{flexDirection:'row', padding:'0.7rem 1.1rem'}} onClick={handleSendMessage} disabled={!chatInput.trim() || !address}>Send</button>
                 </div>
@@ -1176,7 +1313,7 @@ useEffect(() => {
             )}
 
             <div style={{textAlign:'center', marginTop:'1rem'}}>
-              <a className="etherscan-link" href={`https://sepolia.etherscan.io/address/${contractAddress}`} target="_blank" rel="noreferrer">View on Etherscan ↗</a>
+              <a className="etherscan-link" href={`https://sepolia.etherscan.io/address/${contractAddress}`} target="_blank" rel="noreferrer">View on Etherscan <ExternalLinkIcon size={11}/></a>
             </div>
           </div>
         )}

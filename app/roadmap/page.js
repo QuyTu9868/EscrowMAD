@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { SunIcon, MoonIcon, ArrowLeftIcon } from '../components/Icons';
 
 const NAVBAR_H = 64;
 
@@ -70,48 +71,28 @@ export default function RoadmapPage() {
   return (
     <div className={isDark ? 'theme-dark' : 'theme-light'} style={{minHeight:'100vh'}}>
       <style>{`
-        :root {
-          --font-mono: monospace;
-          --navbar-h: ${NAVBAR_H}px;
-          --accent: #7c3aed; --accent2: #06b6d4;
-          --danger: #ef4444; --success: #22c55e;
-        }
-        .theme-dark { --bg: #0a0a0f; --surface: #111118; --border: #1e1e2e; --text: #e2e2f0; --muted: #5a5a7a; --navbar-bg: rgba(10,10,15,0.95); --grid-color: #1e1e2e; --grid-opacity: 0.35; --input-bg: #0a0a0f; background: #0a0a0f; color: #e2e2f0; }
-        .theme-light { --bg: #f0f4ff; --surface: #ffffff; --border: #dde3f0; --text: #1a1a2e; --muted: #6b7280; --navbar-bg: rgba(240,244,255,0.95); --grid-color: #c7d0e8; --grid-opacity: 0.6; --input-bg: #f8faff; background: #f0f4ff; color: #1a1a2e; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: transparent; color: var(--text); font-family: sans-serif; min-height: 100vh; transition: background 0.25s, color 0.25s; }
-        .theme-dark::before, .theme-light::before { content: ''; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(var(--grid-color) 1px, transparent 1px), linear-gradient(90deg, var(--grid-color) 1px, transparent 1px); background-size: 40px 40px; opacity: var(--grid-opacity); z-index: -1; }
-        .theme-toggle { background: transparent; border: none; cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 0.25rem 0.4rem; border-radius: 50%; transition: transform 0.2s; display: flex; align-items: center; }
-        .theme-toggle:hover { transform: scale(1.2); }
-        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; background: var(--navbar-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; height: var(--navbar-h); width: 100%; }
-        .nav-left { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
-        .logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; background: linear-gradient(135deg, #b9a4ff, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-right: 1.5rem; white-space: nowrap; font-family: var(--font-syne, inherit); }
-        .nav-btn { background: transparent; border: 1px solid transparent; padding: 0.5rem 1.2rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.03em; cursor: pointer; border-radius: 8px; transition: all 0.15s; white-space: nowrap; }
-        .nav-btn:hover { color: var(--text); background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.2); }
-        .nav-btn.active { color: #b9a4ff; background: rgba(124,58,237,0.12); border-color: rgba(124,58,237,0.3); }
+        :root { --navbar-h: ${NAVBAR_H}px; }
 
         .page { max-width: 760px; margin: 0 auto; padding: 2rem 2rem 6rem; padding-top: calc(var(--navbar-h) + 2.5rem); }
-        .back-btn { background: transparent; border: none; color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; cursor: pointer; padding: 0; margin-bottom: 2.5rem; display: flex; align-items: center; gap: 0.3rem; transition: color 0.15s; }
-        .back-btn:hover { color: var(--text); }
 
-        .rm-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.24em; color: var(--accent2); text-transform: uppercase; margin-bottom: 0.9rem; }
-        .rm-title { font-size: clamp(2.4rem, 6vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 1rem; font-family: var(--font-syne, inherit); }
+        .rm-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.24em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.9rem; }
+        .rm-title { font-size: clamp(2.6rem, 6vw, 3.6rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 1rem; font-family: var(--font-serif); color: var(--text); }
         .rm-sub { font-family: var(--font-mono); font-size: 0.92rem; color: var(--muted); line-height: 1.8; max-width: 540px; margin-bottom: 3.5rem; }
 
         /* Timeline */
         .timeline { position: relative; }
-        .tl-rail { position: absolute; left: 23px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, var(--accent) 0%, var(--accent) 38%, rgba(6,182,212,0.5) 55%, rgba(90,90,122,0.25) 75%, rgba(90,90,122,0.08) 100%); }
+        .tl-rail { position: absolute; left: 23px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
 
         .phase { position: relative; padding-left: 64px; margin-bottom: 3.25rem; }
         .phase:last-child { margin-bottom: 0; }
 
         .phase-marker { position: absolute; left: 0; top: 0; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem; z-index: 1; background: var(--bg); border: 2px solid; }
-        .phase.live   .phase-marker { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 4px rgba(124,58,237,0.1); }
+        .phase.live   .phase-marker { border-color: var(--success); color: var(--success); }
         .phase.next   .phase-marker { border-color: var(--accent2); color: var(--accent2); }
         .phase.future .phase-marker { border-color: var(--border); color: var(--muted); }
 
         .phase-head { display: flex; align-items: baseline; gap: 0.7rem; flex-wrap: wrap; margin-bottom: 0.3rem; padding-top: 0.55rem; }
-        .phase-title { font-size: 1.45rem; font-weight: 800; color: var(--text); letter-spacing: -0.015em; font-family: var(--font-syne, inherit); }
+        .phase-title { font-size: 1.45rem; font-weight: 700; color: var(--text); letter-spacing: -0.015em; font-family: var(--font-display); }
         .phase-chain { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); }
         .phase-status { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.18rem 0.55rem; border-radius: 999px; border: 1px solid currentColor; margin-left: auto; flex-shrink: 0; }
         .phase.live   .phase-status { color: var(--success); }
@@ -123,7 +104,7 @@ export default function RoadmapPage() {
         .phase-list { display: flex; flex-direction: column; gap: 0.55rem; }
         .phase-li { display: flex; gap: 0.65rem; align-items: flex-start; font-family: var(--font-mono); font-size: 0.83rem; color: var(--text); line-height: 1.65; }
         .phase-li::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); margin-top: 0.55rem; flex-shrink: 0; opacity: 0.6; }
-        .phase.live .phase-li::before { background: var(--accent); opacity: 0.9; }
+        .phase.live .phase-li::before { background: var(--success); opacity: 0.9; }
         .phase.next .phase-li::before { background: var(--accent2); opacity: 0.9; }
 
         @media (max-width: 600px) {
@@ -151,14 +132,14 @@ export default function RoadmapPage() {
         </div>
         <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
           <button className="theme-toggle" onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
-            {isDark ? '☀️' : '🌙'}
+            {isDark ? <SunIcon size={15}/> : <MoonIcon size={15}/>}
           </button>
           <ConnectButton chainStatus="icon" showBalance={false} />
         </div>
       </nav>
 
       <div className="page">
-        <button className="back-btn" onClick={() => router.push('/')}>← Back</button>
+        <button className="back-btn" onClick={() => router.push('/')}><ArrowLeftIcon size={13}/> Back</button>
 
         <div className="rm-eyebrow">Where EscrowMAD is headed</div>
         <div className="rm-title">Roadmap</div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { CloseIcon, BellIcon, FlaskIcon, AlertIcon, ClockIcon, PackageIcon, InfoIcon, CheckIcon, UndoIcon } from '../components/Icons';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const short = (a) => a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '—';
@@ -21,13 +22,13 @@ const STATE = {
 };
 
 const STATE_INFO = {
-  0: { label: 'AWAITING BUYER',   color: '#f59e0b', desc: 'Waiting for a buyer to join' },
-  1: { label: 'ACTIVE',           color: '#22c55e', desc: 'Transaction in progress' },
-  2: { label: 'CANCEL REQ',       color: '#ef4444', desc: 'Cancellation requested' },
-  3: { label: 'RETURN REQ',       color: '#8b5cf6', desc: 'Return requested' },
-  4: { label: 'COMPLETED',        color: '#3b82f6', desc: 'Transaction completed successfully' },
-  5: { label: 'CANCELLED',        color: '#6b7280', desc: 'Contract cancelled, funds refunded' },
-  6: { label: 'SELLER CLAIMED',   color: '#6b7280', desc: 'Seller claimed funds after timeout' },
+  0: { label: 'AWAITING BUYER',   color: '#93641E', desc: 'Waiting for a buyer to join' },
+  1: { label: 'ACTIVE',           color: '#3E6B43', desc: 'Transaction in progress' },
+  2: { label: 'CANCEL REQ',       color: '#A23A34', desc: 'Cancellation requested' },
+  3: { label: 'RETURN REQ',       color: '#93641E', desc: 'Return requested' },
+  4: { label: 'COMPLETED',        color: '#2B6C93', desc: 'Transaction completed successfully' },
+  5: { label: 'CANCELLED',        color: '#7A776D', desc: 'Contract cancelled, funds refunded' },
+  6: { label: 'SELLER CLAIMED',   color: '#7A776D', desc: 'Seller claimed funds after timeout' },
 };
 
 // ─── Demo data ────────────────────────────────────────────────────────────────
@@ -293,19 +294,19 @@ function DemoModal({ contract, onClose, onStateChange }) {
 
   return (
     <div style={{position:'fixed',inset:0,z:300,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(6px)',display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',zIndex:300}} onClick={onClose}>
-      <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'16px',width:'100%',maxWidth:'640px',maxHeight:'90vh',overflowY:'auto',position:'relative'}} onClick={e => e.stopPropagation()}>
+      <div style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'12px',width:'100%',maxWidth:'640px',maxHeight:'90vh',overflowY:'auto',position:'relative'}} onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{padding:'1.25rem 1.25rem 0',borderBottom:'1px solid var(--border)',paddingBottom:'1rem',position:'sticky',top:0,background:'var(--surface)',zIndex:10,borderRadius:'16px 16px 0 0'}}>
+        <div style={{padding:'1.25rem 1.25rem 0',borderBottom:'1px solid var(--border)',paddingBottom:'1rem',position:'sticky',top:0,background:'var(--surface)',zIndex:10,borderRadius:'12px 12px 0 0'}}>
           <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'0.75rem'}}>
             <div style={{flex:1}}>
               <div style={{display:'flex',alignItems:'center',gap:'0.5rem',marginBottom:'0.4rem'}}>
-                <span style={{fontFamily:'var(--font-mono)',fontSize:'0.6rem',background:'rgba(124,58,237,0.15)',color:'#a78bfa',border:'1px solid rgba(124,58,237,0.3)',padding:'0.15rem 0.5rem',borderRadius:'4px',fontWeight:700,letterSpacing:'0.08em'}}>DEMO</span>
+                <span style={{fontFamily:'var(--font-mono)',fontSize:'0.6rem',background:'var(--accent2-bg)',color:'var(--accent2)',border:'1px solid var(--accent2)',padding:'0.15rem 0.5rem',borderRadius:'4px',fontWeight:700,letterSpacing:'0.08em'}}>DEMO</span>
                 <span style={{fontFamily:'var(--font-mono)',fontSize:'0.68rem',color:stateInfo.color,fontWeight:700}}>{stateInfo.label}</span>
               </div>
               <div style={{fontSize:'1rem',fontWeight:700,color:'var(--text)',lineHeight:1.3}}>{contract.description}</div>
             </div>
-            <button onClick={onClose} style={{background:'transparent',border:'none',color:'var(--muted)',fontSize:'1.3rem',cursor:'pointer',lineHeight:1,padding:'0.1rem',flexShrink:0}}>✕</button>
+            <button onClick={onClose} style={{background:'transparent',border:'none',color:'var(--muted)',cursor:'pointer',lineHeight:1,padding:'0.1rem',flexShrink:0,display:'flex'}}><CloseIcon size={18}/></button>
           </div>
         </div>
 
@@ -325,7 +326,7 @@ function DemoModal({ contract, onClose, onStateChange }) {
             ].map(([label, value], i) => (
               <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'0.55rem 0.85rem',borderBottom:'1px solid var(--border)',gap:'0.5rem'}}>
                 <span style={{fontFamily:'var(--font-mono)',fontSize:'0.75rem',color:'var(--muted)',flexShrink:0}}>{label}</span>
-                <span style={{fontFamily:'var(--font-mono)',fontSize:'0.78rem',color: label === 'GHN Tracking' ? '#06b6d4' : label === 'Your Role' ? '#a78bfa' : 'var(--text)',fontWeight:600,textAlign:'right',wordBreak:'break-all'}}>{value}</span>
+                <span style={{fontFamily:'var(--font-mono)',fontSize:'0.78rem',color: (label === 'GHN Tracking' || label === 'Your Role') ? 'var(--accent2)' : 'var(--text)',fontWeight:600,textAlign:'right',wordBreak:'break-all'}}>{value}</span>
               </div>
             ))}
           </div>
@@ -336,23 +337,23 @@ function DemoModal({ contract, onClose, onStateChange }) {
 
             {/* AWAITING BUYER — buyer chưa join (chỉ hiện với seller) */}
             {s === STATE.AWAITING_BUYER && isSeller && (
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.8rem',color:'var(--muted)',padding:'0.75rem',background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:'8px'}}>
-                ⏳ Waiting for a buyer to join. Share the contract link.
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.8rem',color:'var(--warn)',padding:'0.75rem',background:'var(--warn-bg)',border:'1px solid var(--warn)',borderRadius:'8px',display:'flex',alignItems:'center',gap:'0.4rem'}}>
+                <ClockIcon size={14}/> Waiting for a buyer to join. Share the contract link.
               </div>
             )}
 
             {/* ACTIVE chưa ship — buyer có thể cancel */}
             {s === STATE.ACTIVE && isBuyer && !shipped && (
               <div style={{display:'grid',gridTemplateColumns:'1fr',gap:'0.5rem'}}>
-                <DemoBtn variant="danger" onClick={handleRequestCancel}>✕ Request Cancel</DemoBtn>
+                <DemoBtn variant="danger" onClick={handleRequestCancel}><CloseIcon size={13}/> Request Cancel</DemoBtn>
               </div>
             )}
 
             {/* ACTIVE đã ship — buyer confirm hoặc return */}
             {s === STATE.ACTIVE && isBuyer && shipped && (
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
-                <DemoBtn variant="success" onClick={handleConfirmDelivery}>✓ Confirm Delivery</DemoBtn>
-                <DemoBtn variant="warn" onClick={handleRequestReturn}>↩ Request Return</DemoBtn>
+                <DemoBtn variant="success" onClick={handleConfirmDelivery}><CheckIcon size={13}/> Confirm Delivery</DemoBtn>
+                <DemoBtn variant="warn" onClick={handleRequestReturn}><UndoIcon size={13}/> Request Return</DemoBtn>
               </div>
             )}
 
@@ -361,15 +362,15 @@ function DemoModal({ contract, onClose, onStateChange }) {
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
                 {!shipped ? (
                   <>
-                    <DemoBtn variant="cyan" onClick={() => setShowShipForm(v => !v)}>📦 Mark as Shipped</DemoBtn>
-                    <DemoBtn variant="danger" onClick={handleRequestCancel}>✕ Request Cancel</DemoBtn>
+                    <DemoBtn variant="cyan" onClick={() => setShowShipForm(v => !v)}><PackageIcon size={13}/> Mark as Shipped</DemoBtn>
+                    <DemoBtn variant="danger" onClick={handleRequestCancel}><CloseIcon size={13}/> Request Cancel</DemoBtn>
                   </>
                 ) : (
                   <>
-                    <div style={{fontFamily:'var(--font-mono)',fontSize:'0.75rem',color:'#06b6d4',padding:'0.65rem 0.85rem',background:'rgba(6,182,212,0.08)',border:'1px solid rgba(6,182,212,0.25)',borderRadius:'8px',textAlign:'center'}}>
-                      📦 Shipped ✓
+                    <div style={{fontFamily:'var(--font-mono)',fontSize:'0.75rem',color:'var(--accent2)',padding:'0.65rem 0.85rem',background:'var(--accent2-bg)',border:'1px solid var(--accent2)',borderRadius:'8px',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:'0.35rem'}}>
+                      <PackageIcon size={13}/> Shipped <CheckIcon size={12}/>
                     </div>
-                    <DemoBtn variant="cyan-outline" onClick={handleClaimTimeout}>⏰ Claim (Demo)</DemoBtn>
+                    <DemoBtn variant="cyan-outline" onClick={handleClaimTimeout}><ClockIcon size={13}/> Claim (Demo)</DemoBtn>
                   </>
                 )}
               </div>
@@ -377,7 +378,7 @@ function DemoModal({ contract, onClose, onStateChange }) {
 
             {/* Ship form ảo */}
             {showShipForm && s === STATE.ACTIVE && isSeller && !shipped && (
-              <div style={{background:'rgba(6,182,212,0.05)',border:'1px solid rgba(6,182,212,0.2)',borderRadius:'10px',padding:'1rem',display:'flex',flexDirection:'column',gap:'0.5rem'}}>
+              <div style={{background:'var(--accent2-bg)',border:'1px solid var(--accent2)',borderRadius:'10px',padding:'1rem',display:'flex',flexDirection:'column',gap:'0.5rem'}}>
                 <div style={{fontFamily:'var(--font-mono)',fontSize:'0.68rem',color:'var(--muted)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'0.2rem'}}>GHN Shipping Info</div>
                 {[
                   ['Recipient name', 'name'],
@@ -396,8 +397,8 @@ function DemoModal({ contract, onClose, onStateChange }) {
                   <DemoBtn variant="primary" onClick={handleShip}>Confirm Ship</DemoBtn>
                   <DemoBtn variant="ghost" onClick={() => setShowShipForm(false)}>Cancel</DemoBtn>
                 </div>
-                <div style={{fontFamily:'var(--font-mono)',fontSize:'0.68rem',color:'var(--muted)',padding:'0.4rem 0.6rem',background:'rgba(124,58,237,0.06)',border:'1px solid rgba(124,58,237,0.15)',borderRadius:'6px'}}>
-                  ℹ️ Demo mode — a fake GHN tracking code will be generated.
+                <div style={{fontFamily:'var(--font-mono)',fontSize:'0.68rem',color:'var(--muted)',padding:'0.4rem 0.6rem',background:'var(--surface-2)',border:'1px solid var(--border)',borderRadius:'6px',display:'flex',alignItems:'center',gap:'0.35rem'}}>
+                  <InfoIcon size={12}/> Demo mode — a fake GHN tracking code will be generated.
                 </div>
               </div>
             )}
@@ -405,12 +406,12 @@ function DemoModal({ contract, onClose, onStateChange }) {
             {/* CANCEL REQUESTED */}
             {s === STATE.CANCEL_REQUESTED && (
               <>
-                <div style={{fontFamily:'var(--font-mono)',fontSize:'0.78rem',color:'#ef4444',padding:'0.6rem 0.75rem',background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px'}}>
-                  ✕ Cancel requested by {isInitiator ? 'you' : 'the other party'}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree?'}
+                <div style={{fontFamily:'var(--font-mono)',fontSize:'0.78rem',color:'var(--danger)',padding:'0.6rem 0.75rem',background:'var(--danger-bg)',border:'1px solid var(--danger)',borderRadius:'8px',display:'flex',alignItems:'flex-start',gap:'0.4rem'}}>
+                  <CloseIcon size={13}/> <span>Cancel requested by {isInitiator ? 'you' : 'the other party'}.{isInitiator ? ' Waiting for the other party.' : ' Do you agree?'}</span>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
-                  {!isInitiator && <DemoBtn variant="danger" onClick={handleApproveCancel}>✓ Approve Cancel</DemoBtn>}
-                  {isInitiator  && <DemoBtn variant="secondary" onClick={handleWithdrawCancel}>↩ Withdraw Request</DemoBtn>}
+                  {!isInitiator && <DemoBtn variant="danger" onClick={handleApproveCancel}><CheckIcon size={13}/> Approve Cancel</DemoBtn>}
+                  {isInitiator  && <DemoBtn variant="secondary" onClick={handleWithdrawCancel}><UndoIcon size={13}/> Withdraw Request</DemoBtn>}
                 </div>
               </>
             )}
@@ -418,30 +419,30 @@ function DemoModal({ contract, onClose, onStateChange }) {
             {/* RETURN REQUESTED */}
             {s === STATE.RETURN_REQUESTED && (
               <>
-                <div style={{fontFamily:'var(--font-mono)',fontSize:'0.78rem',color:'#8b5cf6',padding:'0.6rem 0.75rem',background:'rgba(139,92,246,0.07)',border:'1px solid rgba(139,92,246,0.2)',borderRadius:'8px'}}>
-                  ↩ Return requested by {isBuyer ? 'you' : 'buyer'}.{isBuyer ? ' Waiting for the seller.' : ' Do you agree to accept the return?'}
+                <div style={{fontFamily:'var(--font-mono)',fontSize:'0.78rem',color:'var(--warn)',padding:'0.6rem 0.75rem',background:'var(--warn-bg)',border:'1px solid var(--warn)',borderRadius:'8px',display:'flex',alignItems:'flex-start',gap:'0.4rem'}}>
+                  <UndoIcon size={13}/> <span>Return requested by {isBuyer ? 'you' : 'buyer'}.{isBuyer ? ' Waiting for the seller.' : ' Do you agree to accept the return?'}</span>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.5rem'}}>
-                  {isSeller && <DemoBtn variant="warn" onClick={handleApproveReturn}>✓ Approve Return</DemoBtn>}
-                  {isBuyer  && <DemoBtn variant="secondary" onClick={handleWithdrawReturn}>↩ Withdraw Request</DemoBtn>}
+                  {isSeller && <DemoBtn variant="warn" onClick={handleApproveReturn}><CheckIcon size={13}/> Approve Return</DemoBtn>}
+                  {isBuyer  && <DemoBtn variant="secondary" onClick={handleWithdrawReturn}><UndoIcon size={13}/> Withdraw Request</DemoBtn>}
                 </div>
               </>
             )}
 
             {/* Terminal states */}
             {s === STATE.COMPLETED && (
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color:'#22c55e',padding:'0.75rem',background:'rgba(34,197,94,0.07)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:'8px',textAlign:'center'}}>
-                ✅ Escrow completed. {isSeller ? '💰 Funds released to your wallet.' : '📦 Delivery confirmed. Thank you!'}
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color:'var(--success)',padding:'0.75rem',background:'var(--success-bg)',border:'1px solid var(--success)',borderRadius:'8px',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:'0.4rem',flexWrap:'wrap'}}>
+                <CheckIcon size={14}/> Escrow completed. {isSeller ? 'Funds released to your wallet.' : 'Delivery confirmed. Thank you!'}
               </div>
             )}
             {s === STATE.CANCELLED && (
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color:'var(--muted)',padding:'0.75rem',background:'rgba(107,114,128,0.07)',border:'1px solid rgba(107,114,128,0.2)',borderRadius:'8px',textAlign:'center'}}>
-                🚫 Escrow cancelled. {isSeller ? 'Deposit returned.' : 'Payment refunded.'}
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color:'var(--muted)',padding:'0.75rem',background:'var(--surface-2)',border:'1px solid var(--border)',borderRadius:'8px',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:'0.4rem'}}>
+                <CloseIcon size={14}/> Escrow cancelled. {isSeller ? 'Deposit returned.' : 'Payment refunded.'}
               </div>
             )}
             {s === STATE.SELLER_CLAIMED && (
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color: isSeller ? '#22c55e' : '#ef4444',padding:'0.75rem',background: isSeller ? 'rgba(34,197,94,0.07)' : 'rgba(239,68,68,0.07)',border:`1px solid ${isSeller ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,borderRadius:'8px',textAlign:'center'}}>
-                ⏰ {isSeller ? '💰 Funds claimed after buyer timeout.' : '⚠️ Seller claimed funds due to no response.'}
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'0.82rem',color: isSeller ? 'var(--success)' : 'var(--danger)',padding:'0.75rem',background: isSeller ? 'var(--success-bg)' : 'var(--danger-bg)',border:`1px solid ${isSeller ? 'var(--success)' : 'var(--danger)'}`,borderRadius:'8px',textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:'0.4rem'}}>
+                {isSeller ? <><ClockIcon size={13}/> Funds claimed after buyer timeout.</> : <><AlertIcon size={13}/> Seller claimed funds due to no response.</>}
               </div>
             )}
           </div>
@@ -458,8 +459,8 @@ function DemoModal({ contract, onClose, onStateChange }) {
                     alignSelf: isSystem ? 'center' : mine ? 'flex-end' : 'flex-start',
                     maxWidth: isSystem ? '95%' : '80%',
                     width: isSystem ? '100%' : undefined,
-                    background: isSystem ? 'rgba(6,182,212,0.06)' : mine ? 'rgba(124,58,237,0.15)' : 'var(--border)',
-                    border: `1px solid ${isSystem ? 'rgba(6,182,212,0.2)' : mine ? 'rgba(124,58,237,0.25)' : 'var(--border)'}`,
+                    background: isSystem ? 'var(--accent2-bg)' : mine ? 'var(--success-bg)' : 'var(--surface-2)',
+                    border: `1px solid ${isSystem ? 'var(--accent2)' : mine ? 'var(--success)' : 'var(--border)'}`,
                     borderRadius: '8px',
                     padding: '0.45rem 0.65rem',
                   }}>
@@ -469,13 +470,13 @@ function DemoModal({ contract, onClose, onStateChange }) {
                       </div>
                     )}
                     {isSystem && (
-                      <div style={{fontFamily:'var(--font-mono)',fontSize:'0.6rem',color:'var(--muted)',textAlign:'center',marginBottom:'0.15rem'}}>
-                        🔔 System · {fmtDateTime(m.ts)}
+                      <div style={{fontFamily:'var(--font-mono)',fontSize:'0.6rem',color:'var(--muted)',textAlign:'center',marginBottom:'0.15rem',display:'flex',alignItems:'center',justifyContent:'center',gap:'0.25rem'}}>
+                        <BellIcon size={10}/> System · {fmtDateTime(m.ts)}
                       </div>
                     )}
                     <div style={{
                       fontSize:'0.8rem',
-                      color: isSystem ? '#06b6d4' : 'var(--text)',
+                      color: isSystem ? 'var(--accent2)' : 'var(--text)',
                       fontFamily: isSystem ? 'var(--font-mono)' : 'inherit',
                       wordBreak:'break-word',
                       textAlign: isSystem ? 'center' : 'left',
@@ -497,14 +498,14 @@ function DemoModal({ contract, onClose, onStateChange }) {
               <button
                 onClick={handleSendChat}
                 disabled={!chatInput.trim()}
-                style={{background:'var(--accent)',color:'#fff',border:'none',borderRadius:'8px',padding:'0.65rem 1rem',fontFamily:'var(--font-mono)',fontSize:'0.8rem',fontWeight:700,cursor:'pointer',opacity:chatInput.trim() ? 1 : 0.4,transition:'all 0.15s'}}
+                style={{background:'var(--accent)',color:'var(--accent-contrast)',border:'none',borderRadius:'6px',padding:'0.65rem 1rem',fontFamily:'var(--font-mono)',fontSize:'0.8rem',fontWeight:700,cursor:'pointer',opacity:chatInput.trim() ? 1 : 0.4,transition:'all 0.15s'}}
               >Send</button>
             </div>
           </div>
 
           {/* Demo notice */}
-          <div style={{fontFamily:'var(--font-mono)',fontSize:'0.68rem',color:'var(--muted)',textAlign:'center',padding:'0.4rem',borderTop:'1px solid var(--border)',paddingTop:'0.75rem'}}>
-            🧪 This is a demo contract — no wallet signature required. State resets on wallet change.
+          <div style={{fontFamily:'var(--font-mono)',fontSize:'0.68rem',color:'var(--muted)',textAlign:'center',padding:'0.4rem',borderTop:'1px solid var(--border)',paddingTop:'0.75rem',display:'flex',alignItems:'center',justifyContent:'center',gap:'0.35rem'}}>
+            <FlaskIcon size={12}/> This is a demo contract — no wallet signature required. State resets on wallet change.
           </div>
         </div>
       </div>
@@ -515,13 +516,13 @@ function DemoModal({ contract, onClose, onStateChange }) {
 // ─── Small button helper ──────────────────────────────────────────────────────
 function DemoBtn({ variant, onClick, children, disabled }) {
   const styles = {
-    primary:      { background: 'var(--accent)',  color: '#fff',        border: '1px solid var(--accent)' },
-    success:      { background: '#22c55e',         color: '#fff',        border: '1px solid #22c55e' },
-    danger:       { background: 'transparent',     color: '#ef4444',     border: '1px solid #ef4444' },
-    warn:         { background: 'transparent',     color: '#f97316',     border: '1px solid #f97316' },
-    secondary:    { background: 'transparent',     color: '#06b6d4',     border: '1px solid #06b6d4' },
-    cyan:         { background: 'rgba(6,182,212,0.1)', color: '#06b6d4', border: '1px solid #06b6d4' },
-    'cyan-outline': { background: 'transparent',  color: '#06b6d4',     border: '1px solid rgba(6,182,212,0.4)' },
+    primary:      { background: 'var(--accent)',  color: 'var(--accent-contrast)', border: '1px solid var(--accent)' },
+    success:      { background: 'var(--success)', color: '#fff',        border: '1px solid var(--success)' },
+    danger:       { background: 'transparent',     color: 'var(--danger)', border: '1px solid var(--danger)' },
+    warn:         { background: 'transparent',     color: 'var(--warn)',   border: '1px solid var(--warn)' },
+    secondary:    { background: 'transparent',     color: 'var(--accent2)', border: '1px solid var(--accent2)' },
+    cyan:         { background: 'var(--accent2-bg)', color: 'var(--accent2)', border: '1px solid var(--accent2)' },
+    'cyan-outline': { background: 'transparent',  color: 'var(--accent2)', border: '1px solid var(--accent2)' },
     ghost:        { background: 'transparent',     color: 'var(--muted)',border: '1px solid var(--border)' },
   };
   return (
@@ -592,7 +593,7 @@ export default function DemoContracts({ walletAddress }) {
             <div className="card-meta">
               <span className="card-addr">demo contract</span>
               <span className="card-deposit">Deposit: {c.deposit} ETH</span>
-              <span style={{fontFamily:'var(--font-mono)',fontSize:'0.62rem',background:'rgba(124,58,237,0.12)',color:'#a78bfa',border:'1px solid rgba(124,58,237,0.25)',padding:'0.15rem 0.45rem',borderRadius:'4px',fontWeight:700,letterSpacing:'0.06em'}}>DEMO</span>
+              <span style={{fontFamily:'var(--font-mono)',fontSize:'0.62rem',background:'var(--accent2-bg)',color:'var(--accent2)',border:'1px solid var(--accent2)',padding:'0.15rem 0.45rem',borderRadius:'4px',fontWeight:700,letterSpacing:'0.06em'}}>DEMO</span>
             </div>
 
             <div style={{fontFamily:'var(--font-mono)',fontSize:'0.68rem',color:'var(--muted)'}}>

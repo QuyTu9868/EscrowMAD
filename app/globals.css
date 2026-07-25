@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Design system dùng chung cho toàn bộ app — theo skill "minimalist-ui":
+   bảng màu đơn sắc ấm (warm monochrome) + pastel nhạt, không gradient,
+   không đổ bóng nặng, viền mảnh 1px. Mọi trang chỉ cần className
+   "theme-light" / "theme-dark" trên thẻ bọc ngoài để nhận toàn bộ palette.
+   ───────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-mono: var(--font-mono, 'Space Mono', monospace);
+  --font-display: var(--font-syne, 'Syne', sans-serif);
+  --font-serif: var(--font-serif, 'Instrument Serif', serif);
+  --radius: 10px;
+
+  /* Pastel ngữ nghĩa — dùng cho badge/tag/trạng thái, giữ tông ấm-nhạt */
+  --accent2: #2B6C93;      /* info / secondary */
+  --accent2-bg: #E1F0F8;
+  --danger: #A23A34;
+  --danger-bg: #FBEAE9;
+  --success: #3E6B43;
+  --success-bg: #EAF1E9;
+  --warn: #93641E;
+  --warn-bg: #FAF1DC;
+  --gold: #9A7B1F;         /* sao đánh giá */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.theme-light {
+  --bg: #FBFBF9;
+  --surface: #FFFFFF;
+  --surface-2: #F6F5F1;
+  --border: #E7E5DF;
+  --text: #17160F;
+  --muted: #7A776D;
+  --navbar-bg: rgba(251,251,249,0.88);
+  --grid-color: #EFEDE6;
+  --grid-opacity: 0.6;
+  --input-bg: #FFFFFF;
+  --accent: #17160F;
+  --accent-contrast: #FBFBF9;
+  background: #FBFBF9;
+  color: #17160F;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.theme-dark {
+  --bg: #17150F;
+  --surface: #1D1B14;
+  --surface-2: #232016;
+  --border: #322E22;
+  --text: #F3F1E9;
+  --muted: #9A9587;
+  --navbar-bg: rgba(23,21,15,0.88);
+  --grid-color: #221F16;
+  --grid-opacity: 0.45;
+  --input-bg: #1D1B14;
+  --accent: #F3F1E9;
+  --accent-contrast: #17160F;
+  background: #17150F;
+  color: #F3F1E9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg, #FBFBF9);
+  color: var(--text, #17160F);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-display);
+  min-height: 100vh;
+  transition: background 0.25s, color 0.25s;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Vân lưới rất nhạt làm nền có chiều sâu — thay cho hero-section trống trơn */
+.theme-dark::before, .theme-light::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: var(--grid-opacity);
+  z-index: -1;
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 8px;
+  color: var(--muted);
+  transition: color 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+}
+.theme-toggle:hover { color: var(--text); border-color: var(--text); }
+
+/* ── Navbar ── */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: var(--navbar-bg); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.75rem; height: var(--navbar-h, 64px); width: 100%;
+}
+.nav-left { display: flex; align-items: center; gap: 0.35rem; flex: 1; }
+.logo { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-display); color: var(--text); margin-right: 1.25rem; white-space: nowrap; }
+.nav-btn { background: transparent; border: 1px solid transparent; padding: 0.45rem 0.95rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; border-radius: 7px; transition: color 0.15s, background 0.15s, border-color 0.15s; white-space: nowrap; }
+.nav-btn:hover { color: var(--text); background: var(--surface-2); }
+.nav-btn.active { color: var(--text); background: var(--surface-2); border-color: var(--border); }
+
+/* ── Card ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.4rem 1.5rem; margin-bottom: 1rem; position: relative; z-index: 1; }
+.card-title { font-size: 0.66rem; font-family: var(--font-mono); letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; margin-bottom: 1rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--border); }
+.mono { font-family: var(--font-mono); font-size: 0.78rem !important; }
+
+/* ── Buttons ── */
+.btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; padding: 0.7rem 1rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: background 0.15s, border-color 0.15s, opacity 0.15s, transform 0.1s; border: 1px solid transparent; }
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.btn-primary   { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+.btn-primary:hover:not(:disabled)   { opacity: 0.85; }
+.btn-secondary { background: transparent; color: var(--accent2); border-color: var(--accent2); }
+.btn-secondary:hover:not(:disabled) { background: var(--accent2-bg); }
+.btn-danger    { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover:not(:disabled)    { background: var(--danger-bg); }
+.btn-success   { background: var(--success); color: #fff; border-color: var(--success); }
+.btn-success:hover:not(:disabled)   { opacity: 0.85; }
+.btn-warn      { background: transparent; color: var(--warn); border-color: var(--warn); }
+.btn-warn:hover:not(:disabled)      { background: var(--warn-bg); }
+.btn-shipped   { background: var(--accent2-bg); color: var(--accent2); border-color: var(--accent2); }
+.btn-shipped:hover:not(:disabled)   { opacity: 0.85; }
+.btn-shipped.done { opacity: 0.55; cursor: default; }
+.btn-claim-locked { opacity: 0.32; cursor: not-allowed; background: transparent; color: var(--accent2); border-color: var(--accent2); }
+.btn-icon { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.65rem; color: var(--muted); cursor: pointer; transition: border-color 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; }
+.btn-icon:hover:not(:disabled) { border-color: var(--text); color: var(--text); }
+.btn-icon:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-sub { font-size: 0.6rem; opacity: 0.7; font-weight: 400; }
+.btn-label { display: flex; align-items: center; gap: 0.4rem; }
+.spinner { width: 11px; height: 11px; border: 2px solid rgba(120,120,120,0.35); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Input ── */
+.input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; color: var(--text); font-family: var(--font-mono); font-size: 0.8rem; outline: none; transition: border-color 0.15s; margin-bottom: 0.55rem; }
+.input:focus { border-color: var(--text); }
+.input::placeholder { color: var(--muted); }
+
+.back-btn { background: transparent; border: none; color: var(--muted); font-family: var(--font-mono); font-size: 0.76rem; cursor: pointer; padding: 0; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.3rem; transition: color 0.15s; }
+.back-btn:hover { color: var(--text); }
+
+.no-role { text-align: center; padding: 1rem; color: var(--muted); font-size: 0.78rem; font-family: var(--font-mono); }
