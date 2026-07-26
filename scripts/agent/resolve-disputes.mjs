@@ -16,6 +16,13 @@ const GROQ_URL = process.env.GROQ_URL || 'https://api.groq.com/openai/v1/chat/co
 const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.6-27b';
 const IPFS_GATEWAY = process.env.IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs/';
 
+// Cho giua cac don. Moi don gui 2 anh, chiem gan het han muc token moi phut
+// (TPM) cua goi free Groq, nen chay lien tiep se dinh 429 tu don thu hai.
+// TPM reset theo phut nen mac dinh cho 60 giay. Dat 0 de tat.
+const GROQ_DELAY_MS = Number(process.env.GROQ_DELAY_MS ?? 60_000);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function requireEnv(name) {
   const value = process.env[name];
   if (!value) {
@@ -67,6 +74,11 @@ async function askGroq({ apiKey, description, orderedImage, receivedImage }) {
     body: JSON.stringify({
       model: GROQ_MODEL,
       response_format: { type: 'json_object' },
+      // Qwen 3.6 la model CO SUY LUAN: mac dinh no xuat khoi <think> vao
+      // content, lam JSON mode loai bo response (json_validate_failed voi
+      // failed_generation rong). Suy luan con ngon het 2048 token output
+      // truoc khi kip tra loi. Tat han bang reasoning_effort: none.
+      reasoning_effort: 'none',
       messages: [
         {
           role: 'user',
@@ -81,6 +93,14 @@ async function askGroq({ apiKey, description, orderedImage, receivedImage }) {
   });
 
   const raw = await res.text();
+  if (res.status === 429) {
+    throw new Error(
+      `Groq tu choi vi vuot gioi han token moi phut (TPM).\n` +
+      `Anh chiem rat nhieu token dau vao, moi don gan cham tran cua goi free.\n` +
+      `Doi mot phut roi chay lai, hoac tang GROQ_DELAY_MS.\n` +
+      `Nguyen van: ${raw}`,
+    );
+  }
   if (!res.ok) {
     throw new Error(`Groq tra ve HTTP ${res.status}: ${raw}`);
   }
@@ -176,7 +196,12 @@ async function main() {
   }
   console.log(`Co ${disputed.length} dispute dang cho: ${disputed.join(', ')}\n`);
 
-  for (const orderId of disputed) {
+  for (const [index, orderId] of disputed.entries()) {
+    if (index > 0 && GROQ_DELAY_MS > 0) {
+      console.log(`(cho ${GROQ_DELAY_MS / 1000}s cho han muc token cua Groq reset)\n`);
+      await sleep(GROQ_DELAY_MS);
+    }
+
     const address = addresses[orderId];
     console.log(`--- Order ${orderId} (${address}) ---`);
 

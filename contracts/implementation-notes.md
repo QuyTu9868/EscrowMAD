@@ -108,6 +108,28 @@ Script đọc 2 hash này từ contract rồi tải qua gateway (`IPFS_GATEWAY`,
 
 Hai case cuối đã kiểm chứng bằng số dư: escrow vẫn giữ nguyên 1.4 ETH sau khi script dừng, tức không có lệnh nào lọt qua.
 
+### Groq thật: 3 vấn đề gặp khi chạy lần đầu (2026-07-25)
+
+Mock server ở CP-3 không lộ ra được mấy cái này. Chạy với key thật mới thấy.
+
+**1. `qwen/qwen3.6-27b` là model CÓ SUY LUẬN.** Mặc định nó xuất khối `<think>...</think>` vào `message.content`. Bật `response_format: json_object` thì Groq kiểm output phải là JSON thuần, thấy `<think>` là loại, trả `HTTP 400 json_validate_failed` với `failed_generation` **rỗng**.
+
+**2. Suy luận ngốn hết token output.** Đo được: `completion_tokens: 2048` (chạm trần mặc định) mà vẫn chưa đóng thẻ `</think>`, tức model bị cắt giữa lúc đang nghĩ, chưa kịp trả lời. Đó là lý do `failed_generation` rỗng chứ không phải JSON hỏng.
+
+**Sửa cả 2 bằng một dòng: `reasoning_effort: 'none'`** trong body request. Qwen 3.6 nhận `none` / `default`. Chọn `none` thay vì `reasoning_format: 'hidden'` vì `hidden` chỉ giấu khối think đi chứ vẫn tiêu token, không giúp gì cho vấn đề 3.
+
+**3. Trần 8000 token/phút (TPM) của gói free.** Hai ảnh ~300KB ngốn ~7900 token đầu vào, tức **một request đã gần chạm trần**. Chạy 5 đơn liên tiếp là dính `HTTP 429` từ đơn thứ hai.
+
+Xử lý: thêm `GROQ_DELAY_MS` (mặc định 60 giây, vì TPM reset theo phút) chờ giữa các đơn. Gặp 429 thì in lý do rõ ràng rồi dừng, **không retry mù**. Muốn nhanh hơn phải thu nhỏ ảnh trước khi gửi, nhưng cần thêm thư viện xử lý ảnh nên chưa làm.
+
+Cách khoanh vùng lúc đó (ghi lại để lần sau nhanh hơn): gọi Groq 4 lần tách từng yếu tố - text + json mode (OK), ảnh không json mode (OK nhưng lộ `<think>`), ảnh + json mode (lỗi), 1 ảnh + json mode. Nhờ vậy biết chắc lỗi do tổ hợp `<think>` + JSON mode chứ không phải do ảnh hay sai tên model.
+
+### `AGENT_MODEL_NAME` - Latch ép phải làm theo cách này
+
+Bản ghi audit cần tên model đã dùng, nhưng **không thể cho agent script gửi kèm `model` trong body** vì policy Latch cấm mọi field lạ (rule `not_exists`). Nên route phải đọc từ env `AGENT_MODEL_NAME`. Thiếu biến này thì cột `model` trong Firestore ghi `unknown`.
+
+Đây là ví dụ cho thấy policy ràng buộc cả thiết kế chứ không chỉ chặn lúc chạy.
+
 ### Chưa test được (cần key thật của bạn)
 
 - Groq thật trả JSON đúng format hay không (mới test bằng mock).
