@@ -16,6 +16,23 @@ async function pickFirstOption(page, index) {
   await select.selectOption(value);
 }
 
+// Navbar co HAI nhanh JSX rieng: da ket noi thi kem logo, chua ket noi thi khong.
+// Nhanh chua ket noi da duoc landing.spec.js phu, day la nhanh con lai.
+test.describe('Navbar khi da ket noi vi', () => {
+  test('van hien so phien ban tren ten dApp', async ({ page }) => {
+    await installMockWallet(page, ACCOUNTS.seller);
+    await page.goto('/');
+    await connectWallet(page, ACCOUNTS.seller);
+
+    const version = page.locator('.logo-version');
+    await expect(version).toHaveText('v1.1.0');
+
+    const v = await version.boundingBox();
+    const name = await page.locator('.logo').boundingBox();
+    expect(v.y + v.height, 'So phien ban khong nam tren ten dApp').toBeLessThanOrEqual(name.y + 1);
+  });
+});
+
 test.describe('Buyer tham gia va tra tien', () => {
   test('buyer tra dung itemPrice + coc, escrow chuyen sang ACTIVE', async ({ page }) => {
     const escrow = await createEscrow({ itemPrice: '0.05', description: 'E2E may anh' });

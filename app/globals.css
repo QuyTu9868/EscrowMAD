@@ -125,7 +125,10 @@ body {
   padding: 0 1.75rem; height: var(--navbar-h, 64px); width: 100%;
 }
 .nav-left { display: flex; align-items: center; gap: 0.35rem; flex: 1; }
-.logo { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-display); color: var(--text); margin-right: 1.25rem; white-space: nowrap; }
+.logo { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-display); color: var(--text); margin-right: 1.25rem; white-space: nowrap; line-height: 1.1; }
+/* So phien ban nam tren ten dApp, du nhin thay chu khong tranh cho. */
+.logo-stack { display: flex; flex-direction: column; align-items: flex-start; }
+.logo-version { font-family: var(--font-mono); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; color: var(--muted); opacity: 0.7; line-height: 1; margin-bottom: 0.15rem; }
 .nav-btn { background: transparent; border: 1px solid transparent; padding: 0.45rem 0.95rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; border-radius: 7px; transition: color 0.15s, background 0.15s, border-color 0.15s; white-space: nowrap; }
 .nav-btn:hover { color: var(--text); background: var(--surface-2); }
 .nav-btn.active { color: var(--text); background: var(--surface-2); border-color: var(--border); }

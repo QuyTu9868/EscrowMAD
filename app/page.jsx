@@ -210,8 +210,8 @@ function Magnetic({ children, strength = 0.4, className = '' }) {
 }
 
 const WHY_ITEMS = [
-  { icon:'ShieldIcon',title:'AI Settles Deadlocks',        desc:'When neither side backs down, an agent compares the listing photo against the photo of what arrived, then releases or refunds on-chain. No human arbiter, no waiting on support.' },
-  { icon:'LockIcon',  title:'The Agent Is Kept On A Leash',desc:'It never holds a key. Every instruction passes a policy gateway first, and the contract only accepts a winner, never an amount or an address.' },
+  { icon:'ShieldIcon',title:'AI Settles Deadlocks',        desc:'When neither side backs down, a vision model reads the listing, the dispatch photo and what actually arrived, then releases or refunds on-chain. No human arbiter, no waiting on support.' },
+  { icon:'LockIcon',  title:'The Agent Is Kept On A Leash',desc:'It never holds a key. Every instruction clears a Latch policy gateway first, and the contract only accepts a winner, never an amount or an address.' },
   { icon:'CameraIcon',title:'Photographed At Every Step',  desc:'The seller photographs what they ship, the buyer photographs what arrives. Both land on IPFS, and both are what the agent reads.' },
   { icon:'CoinIcon',  title:'No Trusted Third Party',      desc:'Code is the only arbiter. No platform can freeze funds, take fees, or reverse decisions.' },
   { icon:'ShieldIcon',title:'Scam-Resistant by Design',    desc:'Both parties post a 20% deposit before activation. Scammers have real skin in the game.' },
@@ -234,11 +234,14 @@ const HOW_STEPS = [
 ];
 
 
+// Doi phien ban thi sua duy nhat o day.
+const APP_VERSION = '1.1.0';
+
 const AGENT_FLOW = [
   { icon:'AlertIcon',  title:'Either side escalates', desc:'Buyer or seller raises a dispute. Funds freeze where they are, and every other action on the escrow closes.' },
-  { icon:'CameraIcon', title:'Two photos go up',      desc:'What the seller listed, and what the buyer says turned up. Both were already on IPFS before the dispute started.' },
-  { icon:'ShieldIcon', title:'The agent reads them',  desc:'It compares the pair against the item description and picks a side, in writing, with its reasoning recorded.' },
-  { icon:'CoinIcon',   title:'It settles on-chain',   desc:'The whole pool goes to whoever it ruled for. One transaction, no partial splits, nothing left to negotiate.' },
+  { icon:'CameraIcon', title:'Three photos go up',    desc:'What the seller listed, what they photographed as they shipped it, and what the buyer says turned up. All were on IPFS before the dispute started.' },
+  { icon:'ShieldIcon', title:'The agent reads them',  desc:'A vision model weighs all three against the item description and picks a side, in writing, with its reasoning recorded. Damage that appears only after dispatch points at the carrier, not the seller.' },
+  { icon:'CoinIcon',   title:'Latch lets it through', desc:'The verdict travels through a policy gateway that can only ever forward one instruction to one endpoint. Then the contract pays the winner the whole pool, in a single transaction.' },
 ];
 
 function LandingCards() {
@@ -317,8 +320,10 @@ function LandingCards() {
       <div className="landing-section">
         <Reveal className="landing-section-label">When Both Sides Dig In</Reveal>
         <Reveal as="p" className="agent-lead" delay={60}>
-          Most escrows never get here. For the ones that do, an agent looks at the
-          evidence and settles it, so nobody waits on a support queue.
+          Most escrows never get here. For the ones that do, a vision model looks at
+          the photographs and settles it, so nobody waits on a support queue. It reaches
+          the contract through Latch, a policy gateway that holds it to exactly one
+          instruction and refuses everything else.
         </Reveal>
 
         <div className="agent-flow">
@@ -339,7 +344,7 @@ function LandingCards() {
           <ul className="agent-guard-list">
             <li>Hold a private key. Signing happens server-side, never in the agent.</li>
             <li>Name an amount or a recipient. The contract takes a winner and nothing else.</li>
-            <li>Reach any other endpoint, send more than twenty instructions an hour, or add a field to the request. A policy gateway rejects all three before they land.</li>
+            <li>Reach any other endpoint, send more than twenty instructions an hour, or add a field to the request. Latch rejects all three before they land.</li>
             <li>Reopen a settled case. Once funds move, the state is final.</li>
           </ul>
         </Reveal>
@@ -973,10 +978,16 @@ useEffect(() => {
           {isConnected ? (
             <div style={{display:'flex', alignItems:'center', gap:'0.5rem', marginRight:'1rem'}}>
               <img src="/logo.png" alt="EscrowMAD" style={{width:'32px', height:'32px', objectFit:'contain', borderRadius:'6px'}} />
-              <div className="logo">EscrowMAD</div>
+              <div className="logo-stack">
+                <span className="logo-version">v{APP_VERSION}</span>
+                <div className="logo">EscrowMAD</div>
+              </div>
             </div>
           ) : (
-            <div className="logo">EscrowMAD</div>
+            <div className="logo-stack">
+              <span className="logo-version">v{APP_VERSION}</span>
+              <div className="logo">EscrowMAD</div>
+            </div>
           )}
           {isConnected && (
             <>

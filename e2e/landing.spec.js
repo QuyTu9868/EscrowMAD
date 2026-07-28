@@ -83,6 +83,31 @@ test.describe('Landing khi chua ket noi vi', () => {
     }
   });
 
+  test('so phien ban nam NGAY TREN ten dApp tren navbar', async ({ page }) => {
+    await page.goto('/');
+
+    const version = page.locator('.logo-version');
+    await expect(version).toHaveText('v1.1.0');
+
+    // Yeu cau la "tren dau ten dApp", nen phai kiem vi tri that chu khong chi
+    // kiem chu co ton tai - dat sai cho van se ra chu dung.
+    const v = await version.boundingBox();
+    const name = await page.locator('.logo').boundingBox();
+    expect(v.y + v.height, 'So phien ban khong nam tren ten dApp').toBeLessThanOrEqual(name.y + 1);
+    expect(Math.abs(v.x - name.x), 'Khong thang hang trai voi ten dApp').toBeLessThanOrEqual(2);
+
+    // "Nho thoi, vua du nhin" - nho hon han ten dApp nhung khong tang hinh.
+    expect(v.height).toBeGreaterThan(5);
+    expect(v.height).toBeLessThan(name.height);
+  });
+
+  test('landing goi ten Latch, khong noi chung chung', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(2_000);
+    // Truoc day trang chi viet "a policy gateway", khong ai biet la cai gi.
+    await expect(page.getByText(/Latch/).first()).toBeAttached();
+  });
+
   test('khoi gioi thieu agent hien day du va cuon toi thi sang len', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(2_000);

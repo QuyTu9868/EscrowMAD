@@ -5,9 +5,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import { CheckIcon, CloseIcon, PackageIcon, AlertIcon, CelebrateIcon, SearchIcon, ExternalLinkIcon , CameraIcon } from './Icons';
 
-// const GHN_DISTRICT_URL = 'https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/district';
-// const GHN_WARD_URL     = 'https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/ward';
-const GHN_TOKEN        = process.env.NEXT_PUBLIC_GHN_TOKEN_PUBLIC; // chỉ dùng để gọi master-data (public)
+// Token GHN nam o server (/api/ghn-master, /api/ghn-order), khong lo ra client.
 
 // ─── Helper ────────────────────────────────────────────────────────────────
 const PROVINCE_ID_DEFAULT = 202; // TP.HCM — buyer có thể chọn tỉnh khác nếu cần
