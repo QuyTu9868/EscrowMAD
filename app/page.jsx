@@ -473,14 +473,14 @@ function HomeInner() {
     const rejected = writeError.name === 'UserRejectedRequestError'
       || writeError.cause?.code === 4001
       || /user rejected|denied|rejected the request/i.test(writeError.message || '');
-    setTxStatus(rejected ? '❌ You rejected the transaction' : '❌ ' + (writeError.shortMessage || writeError.message));
+    setTxStatus(rejected ? 'You rejected the transaction' : '' + (writeError.shortMessage || writeError.message));
     setTimeout(() => setTxStatus(''), 5000);
   }, [writeError]);
 
   // ─── Confirmed: normal tx ─────────────────────────────────────────────────
   useEffect(() => {
     if (isConfirmed) {
-      setTxStatus('✅ Transaction confirmed!');
+      setTxStatus('Transaction confirmed!');
       refetchAll();
       if (pendingAction.current) {
         sendChatNotif(pendingAction.current);
@@ -520,7 +520,7 @@ function HomeInner() {
       setContractAddr(addr);
       setNavPanel(null);
       router.push(`?contract=${addr}`);
-      setTxStatus(`✅ Contract deployed at ${addr}`);
+      setTxStatus(`Contract deployed at ${addr}`);
     });
   }, [isConfirmed, isDeploying, hash]);
 
@@ -566,7 +566,7 @@ useEffect(() => {
 
   const tx = (functionName, args = [], value, chatMsg = null) => {
     writeContract({ address: contractAddress, abi: ABI, functionName, args, ...(value ? { value } : {}), gas: 300_000n });
-    setTxStatus('⏳ Waiting for confirmation...');
+    setTxStatus('Waiting for confirmation...');
     pendingAction.current = chatMsg;
   };
 
@@ -595,13 +595,13 @@ useEffect(() => {
       }).catch(() => {});
     }
     tx('joinAsBuyer', [builtAddress], itemPrice + deposit,
-      `🛒 A buyer has joined the escrow and sent payment. The transaction is now active.`);
+      `A buyer has joined the escrow and sent payment. The transaction is now active.`);
     // Gửi email thông báo cho seller
     getEmailsFromFirestore(contractAddress).then(({ sellerEmail }) => {
       sendEscrowEmail({
         toEmail: sellerEmail,
         recipientName: 'Seller',
-        eventTitle: '🛒 A buyer has joined your escrow',
+        eventTitle: 'A buyer has joined your escrow',
         eventMessage: 'A buyer has joined and sent payment. Your escrow is now active. Please ship the item as soon as possible.',
         itemDescription: itemDescription,
         contractAddress: contractAddress,
@@ -613,20 +613,20 @@ useEffect(() => {
   const handleConfirmDelivery = async () => {
     if (!contractAddress || !address) return;
     try {
-      tx('confirmDelivery', [], null, '✅ Buyer has confirmed delivery. Funds released to seller.');
+      tx('confirmDelivery', [], null, 'Buyer has confirmed delivery. Funds released to seller.');
       // Gửi email thông báo cho seller
       const { sellerEmail } = await getEmailsFromFirestore(contractAddress);
       sendEscrowEmail({
         toEmail: sellerEmail,
         recipientName: 'Seller',
-        eventTitle: '✅ Buyer confirmed delivery',
+        eventTitle: 'Buyer confirmed delivery',
         eventMessage: 'The buyer has confirmed delivery. Funds have been released to your wallet.',
         itemDescription: itemDescription,
         contractAddress: contractAddress,
         amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—',
       });
     } catch (e) {
-      setTxStatus('❌ ' + (e.shortMessage || e.message));
+      setTxStatus('' + (e.shortMessage || e.message));
     }
   };
 
@@ -635,7 +635,7 @@ useEffect(() => {
     localStorage.setItem(shippedKey(contractAddress), JSON.stringify({ at: now }));
     setShipped(true); setShippedAt(now);
     setShowShipModal(false);
-    await sendChatNotif(`📦 Seller has shipped the item. GHN order: ${orderCode} — Track: https://donhang.ghn.vn/?order_code=${orderCode}`);
+    await sendChatNotif(`Seller has shipped the item. GHN order: ${orderCode} — Track: https://donhang.ghn.vn/?order_code=${orderCode}`);
 
     // Gửi email thông báo cho buyer
     const { buyerEmail: bEmail } = await getEmailsFromFirestore(contractAddress);
@@ -643,7 +643,7 @@ useEffect(() => {
     sendEscrowEmail({
       toEmail: bEmail,
       recipientName: 'Buyer',
-      eventTitle: '📦 Your item has been shipped',
+      eventTitle: 'Your item has been shipped',
       eventMessage: `The seller has shipped your item. GHN tracking code: ${orderCode}. Track your order at: https://donhang.ghn.vn/?order_code=${orderCode}`,
       itemDescription: itemDescription,
       contractAddress: contractAddress,
@@ -703,10 +703,10 @@ useEffect(() => {
         value: dep,
         gas:   3_000_000n,
       });
-      setTxStatus('⏳ Check your wallet to sign the deploy transaction...');
+      setTxStatus('Check your wallet to sign the deploy transaction...');
     } catch (e) {
       setIsDeploying(false);
-      setTxStatus('❌ ' + (e.shortMessage || e.message));
+      setTxStatus('' + (e.shortMessage || e.message));
     }
   };
 
@@ -1100,9 +1100,9 @@ useEffect(() => {
                   {!shipped && (
                     <div className="actions single">
                       <button className="btn btn-danger" onClick={() => {
-                        tx('requestCancel', [], null, '✕ Buyer has requested to cancel this transaction.');
+                        tx('requestCancel', [], null, 'Buyer has requested to cancel this transaction.');
                         getEmailsFromFirestore(contractAddress).then(({ sellerEmail }) => {
-                          sendEscrowEmail({ toEmail: sellerEmail, recipientName: 'Seller', eventTitle: '✕ Buyer requested cancellation', eventMessage: 'The buyer has requested to cancel this transaction. You can approve or wait for auto-resolution.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
+                          sendEscrowEmail({ toEmail: sellerEmail, recipientName: 'Seller', eventTitle: 'Buyer requested cancellation', eventMessage: 'The buyer has requested to cancel this transaction. You can approve or wait for auto-resolution.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                         });
                       }} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}<CloseIcon size={13}/> Cancel</span>
@@ -1118,9 +1118,9 @@ useEffect(() => {
                       {!shipped && <span className="btn-sub">Awaiting shipment</span>}
                     </button>
                     <button className={`btn ${shipped ? 'btn-warn' : 'btn-claim-locked'}`} onClick={shipped ? () => {
-                      tx('requestReturn', ['evidence'], null, '↩ Buyer has requested a return.');
+                      tx('requestReturn', ['evidence'], null, 'Buyer has requested a return.');
                       getEmailsFromFirestore(contractAddress).then(({ sellerEmail }) => {
-                        sendEscrowEmail({ toEmail: sellerEmail, recipientName: 'Seller', eventTitle: '↩ Buyer requested a return', eventMessage: 'The buyer has requested to return the item. Please review and approve or wait for auto-resolution in 72 hours.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
+                        sendEscrowEmail({ toEmail: sellerEmail, recipientName: 'Seller', eventTitle: 'Buyer requested a return', eventMessage: 'The buyer has requested to return the item. Please review and approve or wait for auto-resolution in 72 hours.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                       });
                     } : undefined} disabled={isLoading || !shipped}>
                       <span className="btn-label">{isLoading && shipped && <span className="spinner" />}<UndoIcon size={13}/> Return</span>
@@ -1140,9 +1140,9 @@ useEffect(() => {
                   </button>
                   {!shipped && (
                     <button className="btn btn-danger" onClick={() => {
-                      tx('requestCancel', [], null, '✕ Seller has requested to cancel.');
+                      tx('requestCancel', [], null, 'Seller has requested to cancel.');
                       getEmailsFromFirestore(contractAddress).then(({ buyerEmail: bEmail }) => {
-                        sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: '✕ Seller requested cancellation', eventMessage: 'The seller has requested to cancel this transaction. You can approve or wait for auto-resolution.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
+                        sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: 'Seller requested cancellation', eventMessage: 'The seller has requested to cancel this transaction. You can approve or wait for auto-resolution.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                       });
                     }} disabled={isLoading}>
                       <span className="btn-label">{isLoading && <span className="spinner" />}<CloseIcon size={13}/> Cancel</span>
@@ -1150,9 +1150,9 @@ useEffect(() => {
                   )}
                   {shipped && (
                     <button className={`btn ${claimReady ? 'btn-secondary' : 'btn-claim-locked'}`} onClick={claimReady ? () => {
-                      tx('claimAfterBuyerTimeout', [], null, '⏰ Seller claimed funds after buyer timeout.');
+                      tx('claimAfterBuyerTimeout', [], null, 'Seller claimed funds after buyer timeout.');
                       getEmailsFromFirestore(contractAddress).then(({ buyerEmail: bEmail }) => {
-                        sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: '⏰ Seller claimed funds', eventMessage: 'You did not confirm delivery within the allowed time. The seller has claimed the funds.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
+                        sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: 'Seller claimed funds', eventMessage: 'You did not confirm delivery within the allowed time. The seller has claimed the funds.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                       });
                     } : undefined} disabled={isLoading || !claimReady}>
                       <span className="btn-label">{isLoading && claimReady && <span className="spinner" />}<ClockIcon size={13}/> Claim</span>
@@ -1168,17 +1168,17 @@ useEffect(() => {
                   <div className="actions">
                     {!isInitiator && (
                       <button className="btn btn-danger" onClick={() => {
-                        tx('approveCancel', [], null, '✅ Cancel approved. Funds returned.');
+                        tx('approveCancel', [], null, 'Cancel approved. Funds returned.');
                         getEmailsFromFirestore(contractAddress).then(({ sellerEmail, buyerEmail: bEmail }) => {
                           const targetEmail = isInitiator ? '' : (isSeller ? bEmail : sellerEmail);
-                          sendEscrowEmail({ toEmail: targetEmail, recipientName: isInitiator ? '' : (isSeller ? 'Buyer' : 'Seller'), eventTitle: '✅ Cancellation approved', eventMessage: 'The cancellation has been approved. Funds have been returned to both parties.', itemDescription: itemDescription, contractAddress: contractAddress, amount: deposit != null ? `${formatEther(deposit)} ETH` : '—' });
+                          sendEscrowEmail({ toEmail: targetEmail, recipientName: isInitiator ? '' : (isSeller ? 'Buyer' : 'Seller'), eventTitle: 'Cancellation approved', eventMessage: 'The cancellation has been approved. Funds have been returned to both parties.', itemDescription: itemDescription, contractAddress: contractAddress, amount: deposit != null ? `${formatEther(deposit)} ETH` : '—' });
                         });
                       }} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}<CheckIcon size={13}/> Approve Cancel</span>
                       </button>
                     )}
                     {isInitiator && (
-                      <button className="btn btn-secondary" onClick={() => tx('withdrawCancelRequest', [], null, '↩ Cancel request withdrawn.')} disabled={isLoading}>
+                      <button className="btn btn-secondary" onClick={() => tx('withdrawCancelRequest', [], null, 'Cancel request withdrawn.')} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}<UndoIcon size={13}/> Withdraw Request</span>
                       </button>
                     )}
@@ -1192,16 +1192,16 @@ useEffect(() => {
                   <div className="actions single">
                     {!isInitiator && (
                       <button className="btn btn-warn" style={{width:'100%'}} onClick={() => {
-                        tx('approveReturn', [], null, '✅ Return approved. Funds returned to buyer.');
+                        tx('approveReturn', [], null, 'Return approved. Funds returned to buyer.');
                         getEmailsFromFirestore(contractAddress).then(({ buyerEmail: bEmail }) => {
-                          sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: '✅ Return approved', eventMessage: 'The seller has approved your return request. Funds have been returned to your wallet.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
+                          sendEscrowEmail({ toEmail: bEmail, recipientName: 'Buyer', eventTitle: 'Return approved', eventMessage: 'The seller has approved your return request. Funds have been returned to your wallet.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
                         });
                       }} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}<CheckIcon size={13}/> Approve Return</span>
                       </button>
                     )}
                     {isInitiator && (
-                      <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => tx('withdrawReturnRequest', [], null, '↩ Return request withdrawn.')} disabled={isLoading}>
+                      <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => tx('withdrawReturnRequest', [], null, 'Return request withdrawn.')} disabled={isLoading}>
                         <span className="btn-label">{isLoading && <span className="spinner" />}<UndoIcon size={13}/> Withdraw Request</span>
                       </button>
                     )}
@@ -1214,7 +1214,7 @@ useEffect(() => {
                   {itemImageHash && returnEvidenceHash ? (
                     <button className="btn btn-danger" style={{width:'100%'}} disabled={isLoading} onClick={() => {
                       if (!window.confirm('Raise a dispute?\n\nAn AI agent will compare the listing photo with your photo of the delivered item, then release the funds to whoever it decides. This cannot be undone.')) return;
-                      tx('raiseDispute', [], null, '⚖️ Dispute raised. An AI agent will review the evidence.');
+                      tx('raiseDispute', [], null, 'Dispute raised. An AI agent will review the evidence.');
                     }}>
                       <span className="btn-label">{isLoading && <span className="spinner" />}<AlertIcon size={13}/> Raise Dispute</span>
                     </button>

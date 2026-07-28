@@ -9,7 +9,7 @@ test.describe('Bao ve trang admin', () => {
   test('chua dang nhap thi bi day ve trang login', async ({ page }) => {
     await page.goto('/admin/disputes');
     await expect(page).toHaveURL(/\/admin\/login/);
-    await expect(page.getByText(/enter the 6-digit code/i)).toBeVisible();
+    await expect(page.getByText(/enter the six digit code/i)).toBeVisible();
   });
 
   test('ma sai thi bao loi va khong vao duoc', async ({ page }) => {

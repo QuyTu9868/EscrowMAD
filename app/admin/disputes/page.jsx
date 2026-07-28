@@ -6,6 +6,7 @@ import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { ADMIN_COOKIE, isSessionValid } from '../../../lib/adminSession';
 import { ESCROW_ABI, FACTORY_ABI, STATE } from '../../../lib/escrowAbi';
+import RevealOnScroll from '../../components/RevealOnScroll';
 
 // Trang doc du lieu song nen khong duoc cache.
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,9 @@ const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 async function loadPending() {
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
   const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
-  if (!rpcUrl || !factoryAddress) return { items: [], error: 'Thieu NEXT_PUBLIC_RPC_URL hoac NEXT_PUBLIC_FACTORY_ADDRESS' };
+  if (!rpcUrl || !factoryAddress) {
+    return { items: [], error: 'Thieu NEXT_PUBLIC_RPC_URL hoac NEXT_PUBLIC_FACTORY_ADDRESS' };
+  }
 
   try {
     const client = createPublicClient({ chain: sepolia, transport: http(rpcUrl) });
@@ -83,31 +86,32 @@ async function loadResolved() {
 }
 
 function Evidence({ orderedHash, receivedHash }) {
-  if (!orderedHash && !receivedHash) {
-    return <p style={{ color: 'var(--muted)', fontSize: 13 }}>No evidence images on this order yet.</p>;
-  }
+  if (!orderedHash && !receivedHash) return null;
   return (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 10 }}>
+    <div className="evidence-pair">
       {[
         { label: 'Ordered', hash: orderedHash },
         { label: 'Received', hash: receivedHash },
       ].map(({ label, hash }) => (
-        <figure key={label} style={{ margin: 0, flex: '1 1 180px', minWidth: 160 }}>
-          <figcaption style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>{label}</figcaption>
+        <figure className="evidence-item" key={label}>
+          <figcaption>{label}</figcaption>
           {hash ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={`${IPFS_GATEWAY}${hash}`}
-              alt={label}
-              style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-            />
+            <img src={`${IPFS_GATEWAY}${hash}`} alt={label} />
           ) : (
-            <div style={{ padding: 20, border: '1px dashed var(--border)', borderRadius: 'var(--radius)', color: 'var(--muted)', fontSize: 12 }}>
-              missing
-            </div>
+            <div className="evidence-missing">no image</div>
           )}
         </figure>
       ))}
+    </div>
+  );
+}
+
+function SectionTitle({ children, count }) {
+  return (
+    <div className="admin-section-title">
+      <h2>{children}</h2>
+      <span className="admin-count">{count}</span>
     </div>
   );
 }
@@ -121,91 +125,93 @@ export default async function AdminDisputesPage() {
   const [pending, resolved] = await Promise.all([loadPending(), loadResolved()]);
 
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 20px' }}>
-      <h1 className="card-title" style={{ marginBottom: 4 }}>Disputes</h1>
-      <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 32 }}>
-        Read-only. The agent decides and settles on-chain; nothing here can be changed by hand.
-      </p>
+    <main className="shell admin-page">
+      <RevealOnScroll />
 
-      <section style={{ marginBottom: 40 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 12 }}>Awaiting the agent ({pending.items.length})</h2>
+      <header className="admin-head">
+        <h1>Disputes</h1>
+        <p>
+          Read only. The agent reviews the evidence and settles on-chain by itself.
+          Nothing on this page can change an outcome.
+        </p>
+      </header>
+
+      <section className="admin-section">
+        <SectionTitle count={pending.items.length}>Awaiting the agent</SectionTitle>
 
         {pending.error && (
-          <div className="card" style={{ borderColor: 'var(--danger)' }}>
-            <p style={{ color: 'var(--danger)', fontSize: 13, margin: 0 }}>Could not read the chain: {pending.error}</p>
+          <div className="card admin-error">
+            <p>Could not read the chain: {pending.error}</p>
           </div>
         )}
 
         {!pending.error && pending.items.length === 0 && (
-          <p style={{ color: 'var(--muted)', fontSize: 14 }}>Nothing waiting.</p>
+          <p className="admin-empty">Nothing waiting.</p>
         )}
 
-        {pending.items.map((item) => (
-          <div className="card" key={item.address} style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <strong>Order #{item.orderId}</strong>
-              <a
-                className="etherscan-link mono"
-                href={`https://sepolia.etherscan.io/address/${item.address}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ fontSize: 12 }}
-              >
-                {item.address.slice(0, 8)}...{item.address.slice(-6)}
-              </a>
-            </div>
-            <p style={{ fontSize: 14, marginTop: 6 }}>{item.description}</p>
-            <Evidence orderedHash={item.orderedHash} receivedHash={item.receivedHash} />
-          </div>
-        ))}
+        <div className="bento">
+          {pending.items.map((item, index) => (
+            <article className="card bento-wide reveal" key={item.address} style={{ '--index': index }}>
+              <div className="admin-row-head">
+                <span className="admin-order-id">Order {item.orderId}</span>
+                <a
+                  className="etherscan-link mono"
+                  href={`https://sepolia.etherscan.io/address/${item.address}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {item.address.slice(0, 10)}...{item.address.slice(-8)}
+                </a>
+              </div>
+              <p className="admin-desc">{item.description}</p>
+              <Evidence orderedHash={item.orderedHash} receivedHash={item.receivedHash} />
+            </article>
+          ))}
+        </div>
       </section>
 
-      <section>
-        <h2 style={{ fontSize: 16, marginBottom: 12 }}>Settled ({resolved.items.length})</h2>
+      <section className="admin-section">
+        <SectionTitle count={resolved.items.length}>Settled</SectionTitle>
 
         {resolved.error && (
-          <div className="card" style={{ borderColor: 'var(--danger)' }}>
-            <p style={{ color: 'var(--danger)', fontSize: 13, margin: 0 }}>Could not read Firestore: {resolved.error}</p>
+          <div className="card admin-error">
+            <p>Could not read Firestore: {resolved.error}</p>
           </div>
         )}
 
         {!resolved.error && resolved.items.length === 0 && (
-          <p style={{ color: 'var(--muted)', fontSize: 14 }}>No dispute has been settled yet.</p>
+          <p className="admin-empty">No dispute has been settled yet.</p>
         )}
 
-        {resolved.items.map((item) => (
-          <div className="card" key={item.id} style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <strong>Order #{item.orderId}</strong>
-              <span
-                className="mono"
-                style={{
-                  fontSize: 12,
-                  color: item.decision === 'release' ? 'var(--success)' : 'var(--warn)',
-                }}
-              >
-                {item.decision === 'release' ? 'RELEASED TO SELLER' : 'REFUNDED TO BUYER'}
-              </span>
-            </div>
+        <div className="bento">
+          {resolved.items.map((item, index) => (
+            <article className="card reveal" key={item.id} style={{ '--index': index }}>
+              <div className="admin-row-head">
+                <span className="admin-order-id">Order {item.orderId}</span>
+                <span className={`admin-verdict ${item.decision === 'release' ? 'release' : 'refund'}`}>
+                  {item.decision === 'release' ? 'Released to seller' : 'Refunded to buyer'}
+                </span>
+              </div>
 
-            <p style={{ fontSize: 14, marginTop: 8 }}>{item.reason}</p>
+              <p className="admin-reason">{item.reason}</p>
 
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 10, fontSize: 12, color: 'var(--muted)' }}>
-              {item.resolvedAt && <span>{new Date(item.resolvedAt).toLocaleString()}</span>}
-              {item.model && <span className="mono">{item.model}</span>}
-              {item.txHash && (
-                <a
-                  className="etherscan-link mono"
-                  href={`https://sepolia.etherscan.io/tx/${item.txHash}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  view transaction
-                </a>
-              )}
-            </div>
-          </div>
-        ))}
+              <div className="admin-meta">
+                {item.resolvedAt && <span>{new Date(item.resolvedAt).toLocaleString('en-GB')}</span>}
+                {item.model && <span>{item.model}</span>}
+                {item.txHash && (
+                  <a
+                    className="etherscan-link"
+                    href={`https://sepolia.etherscan.io/tx/${item.txHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    view transaction
+                  </a>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
     </main>
   );

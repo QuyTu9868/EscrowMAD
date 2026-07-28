@@ -42,7 +42,7 @@ const BASE_CONTRACTS = [
     cancelInitiator: null,
     createdAt: Date.now() - 3600_000,
     chat: [
-      { sender: 'system', type: 'system',  message: '🔔 Contract deployed. Waiting for a buyer.',                   ts: Date.now() - 3600_000 },
+      { sender: 'system', type: 'system',  message: 'Contract deployed. Waiting for a buyer.',                   ts: Date.now() - 3600_000 },
       { sender: DEMO_SELLER, type: 'text', message: 'Hi, item is brand new, still has original seal.',              ts: Date.now() - 3500_000 },
     ],
   },
@@ -60,7 +60,7 @@ const BASE_CONTRACTS = [
     cancelInitiator: null,
     createdAt: Date.now() - 86400_000,
     chat: [
-      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment. Transaction is now active.', ts: Date.now() - 86400_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer has joined and sent payment. Transaction is now active.', ts: Date.now() - 86400_000 },
       { sender: DEMO_BUYER,  type: 'text',   message: 'Joined, please ship as soon as you can.',                          ts: Date.now() - 85000_000 },
       { sender: DEMO_SELLER, type: 'text',   message: 'Sure, will pack and drop off tomorrow morning.',                   ts: Date.now() - 84000_000 },
     ],
@@ -79,9 +79,9 @@ const BASE_CONTRACTS = [
     cancelInitiator: null,
     createdAt: Date.now() - 259200_000,
     chat: [
-      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment.',                                                                 ts: Date.now() - 259200_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer has joined and sent payment.',                                                                 ts: Date.now() - 259200_000 },
       { sender: DEMO_SELLER, type: 'text',   message: 'Packed and ready, dropping off today.',                                                                 ts: Date.now() - 200000_000 },
-      { sender: 'system',    type: 'system', message: '📦 Seller has shipped the item. GHN order: GHN-SN10293847 — Track: https://donhang.ghn.vn/?order_code=GHN-SN10293847', ts: Date.now() - 172800_000 },
+      { sender: 'system',    type: 'system', message: 'Seller has shipped the item. GHN order: GHN-SN10293847 — Track: https://donhang.ghn.vn/?order_code=GHN-SN10293847', ts: Date.now() - 172800_000 },
       { sender: DEMO_BUYER,  type: 'text',   message: 'Ok got the tracking, will check.',                                                                      ts: Date.now() - 170000_000 },
     ],
   },
@@ -99,9 +99,9 @@ const BASE_CONTRACTS = [
     cancelInitiator: 'buyer',
     createdAt: Date.now() - 43200_000,
     chat: [
-      { sender: 'system',   type: 'system', message: '🛒 Buyer has joined and sent payment.',           ts: Date.now() - 43200_000 },
+      { sender: 'system',   type: 'system', message: 'Buyer has joined and sent payment.',           ts: Date.now() - 43200_000 },
       { sender: DEMO_BUYER, type: 'text',   message: 'Actually I need to cancel, something came up.',  ts: Date.now() - 40000_000 },
-      { sender: 'system',   type: 'system', message: '✕ Buyer has requested to cancel this transaction.', ts: Date.now() - 39900_000 },
+      { sender: 'system',   type: 'system', message: 'Buyer has requested to cancel this transaction.', ts: Date.now() - 39900_000 },
     ],
   },
   {
@@ -118,9 +118,9 @@ const BASE_CONTRACTS = [
     cancelInitiator: 'seller',
     createdAt: Date.now() - 50000_000,
     chat: [
-      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment.',               ts: Date.now() - 50000_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer has joined and sent payment.',               ts: Date.now() - 50000_000 },
       { sender: DEMO_SELLER, type: 'text',   message: 'Sorry I need to cancel, item got damaged in storage.', ts: Date.now() - 48000_000 },
-      { sender: 'system',    type: 'system', message: '✕ Seller has requested to cancel.',                    ts: Date.now() - 47900_000 },
+      { sender: 'system',    type: 'system', message: 'Seller has requested to cancel.',                    ts: Date.now() - 47900_000 },
     ],
   },
   {
@@ -137,10 +137,10 @@ const BASE_CONTRACTS = [
     cancelInitiator: 'buyer',
     createdAt: Date.now() - 432000_000,
     chat: [
-      { sender: 'system',   type: 'system', message: '🛒 Buyer has joined and sent payment.',                                                               ts: Date.now() - 432000_000 },
-      { sender: 'system',   type: 'system', message: '📦 Seller shipped. GHN order: GHN-DJ99182736 — Track: https://donhang.ghn.vn/?order_code=GHN-DJ99182736', ts: Date.now() - 345600_000 },
+      { sender: 'system',   type: 'system', message: 'Buyer has joined and sent payment.',                                                               ts: Date.now() - 432000_000 },
+      { sender: 'system',   type: 'system', message: 'Seller shipped. GHN order: GHN-DJ99182736 — Track: https://donhang.ghn.vn/?order_code=GHN-DJ99182736', ts: Date.now() - 345600_000 },
       { sender: DEMO_BUYER, type: 'text',   message: 'Item arrived but one propeller is broken.',            ts: Date.now() - 300000_000 },
-      { sender: 'system',   type: 'system', message: '↩ Buyer has requested a return.',                      ts: Date.now() - 299000_000 },
+      { sender: 'system',   type: 'system', message: 'Buyer has requested a return.',                      ts: Date.now() - 299000_000 },
     ],
   },
   {
@@ -157,10 +157,10 @@ const BASE_CONTRACTS = [
     cancelInitiator: null,
     createdAt: Date.now() - 864000_000,
     chat: [
-      { sender: 'system',   type: 'system', message: '🛒 Buyer has joined and sent payment.',                                                                  ts: Date.now() - 864000_000 },
-      { sender: 'system',   type: 'system', message: '📦 Seller shipped. GHN order: GHN-WC00192837 — Track: https://donhang.ghn.vn/?order_code=GHN-WC00192837', ts: Date.now() - 691200_000 },
+      { sender: 'system',   type: 'system', message: 'Buyer has joined and sent payment.',                                                                  ts: Date.now() - 864000_000 },
+      { sender: 'system',   type: 'system', message: 'Seller shipped. GHN order: GHN-WC00192837 — Track: https://donhang.ghn.vn/?order_code=GHN-WC00192837', ts: Date.now() - 691200_000 },
       { sender: DEMO_BUYER, type: 'text',   message: 'Received, looks great. Confirming now.',                                                                 ts: Date.now() - 600000_000 },
-      { sender: 'system',   type: 'system', message: '✅ Buyer has confirmed delivery. Funds released to seller.',                                             ts: Date.now() - 599000_000 },
+      { sender: 'system',   type: 'system', message: 'Buyer has confirmed delivery. Funds released to seller.',                                             ts: Date.now() - 599000_000 },
     ],
   },
   {
@@ -177,10 +177,10 @@ const BASE_CONTRACTS = [
     cancelInitiator: null,
     createdAt: Date.now() - 1900000_000,
     chat: [
-      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment.',                                                                   ts: Date.now() - 1900000_000 },
-      { sender: 'system',    type: 'system', message: '📦 Seller shipped. GHN order: GHN-HM77364819 — Track: https://donhang.ghn.vn/?order_code=GHN-HM77364819', ts: Date.now() - 1728000_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer has joined and sent payment.',                                                                   ts: Date.now() - 1900000_000 },
+      { sender: 'system',    type: 'system', message: 'Seller shipped. GHN order: GHN-HM77364819 — Track: https://donhang.ghn.vn/?order_code=GHN-HM77364819', ts: Date.now() - 1728000_000 },
       { sender: DEMO_SELLER, type: 'text',   message: 'Buyer has not responded for over 17 days, claiming funds.',                                               ts: Date.now() - 100000_000 },
-      { sender: 'system',    type: 'system', message: '⏰ Seller claimed funds after buyer timeout.',                                                             ts: Date.now() - 99000_000 },
+      { sender: 'system',    type: 'system', message: 'Seller claimed funds after buyer timeout.',                                                             ts: Date.now() - 99000_000 },
     ],
   },
   {
@@ -198,13 +198,13 @@ const BASE_CONTRACTS = [
     cancelInitiator: null,
     createdAt: Date.now() - 1200000_000,
     chat: [
-      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment.',                                                    ts: Date.now() - 1200000_000 },
-      { sender: 'system',    type: 'system', message: '📦 Seller shipped. GHN order: GHN-NK55210394',                                             ts: Date.now() - 900000_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer has joined and sent payment.',                                                    ts: Date.now() - 1200000_000 },
+      { sender: 'system',    type: 'system', message: 'Seller shipped. GHN order: GHN-NK55210394',                                             ts: Date.now() - 900000_000 },
       { sender: DEMO_BUYER,  type: 'text',   message: 'These are not the shoes in your listing. Different colourway and the box is damaged.',      ts: Date.now() - 500000_000 },
       { sender: DEMO_SELLER, type: 'text',   message: 'That is what I sent. Photo must have been taken in bad lighting.',                         ts: Date.now() - 480000_000 },
-      { sender: 'system',    type: 'system', message: '↩ Buyer requested a return with photo evidence.',                                          ts: Date.now() - 460000_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer requested a return with photo evidence.',                                          ts: Date.now() - 460000_000 },
       { sender: DEMO_SELLER, type: 'text',   message: 'I do not accept the return.',                                                              ts: Date.now() - 440000_000 },
-      { sender: 'system',    type: 'system', message: '⚖️ Dispute raised. An AI agent will review the evidence.',                                  ts: Date.now() - 420000_000 },
+      { sender: 'system',    type: 'system', message: 'Dispute raised. An AI agent will review the evidence.',                                  ts: Date.now() - 420000_000 },
     ],
   },
   {
@@ -222,12 +222,12 @@ const BASE_CONTRACTS = [
     cancelInitiator: null,
     createdAt: Date.now() - 1000000_000,
     chat: [
-      { sender: 'system',    type: 'system', message: '🛒 Buyer has joined and sent payment.',                                        ts: Date.now() - 1000000_000 },
-      { sender: 'system',    type: 'system', message: '📦 Seller shipped. GHN order: GHN-CN90183726',                                 ts: Date.now() - 700000_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer has joined and sent payment.',                                        ts: Date.now() - 1000000_000 },
+      { sender: 'system',    type: 'system', message: 'Seller shipped. GHN order: GHN-CN90183726',                                 ts: Date.now() - 700000_000 },
       { sender: DEMO_BUYER,  type: 'text',   message: 'Body arrived with a deep scratch on the mount, that was not in your photos.',  ts: Date.now() - 300000_000 },
       { sender: DEMO_SELLER, type: 'text',   message: 'It left here in perfect condition. This looks like shipping damage.',          ts: Date.now() - 280000_000 },
-      { sender: 'system',    type: 'system', message: '↩ Buyer requested a return with photo evidence.',                              ts: Date.now() - 260000_000 },
-      { sender: 'system',    type: 'system', message: '⚖️ Dispute raised. An AI agent will review the evidence.',                      ts: Date.now() - 240000_000 },
+      { sender: 'system',    type: 'system', message: 'Buyer requested a return with photo evidence.',                              ts: Date.now() - 260000_000 },
+      { sender: 'system',    type: 'system', message: 'Dispute raised. An AI agent will review the evidence.',                      ts: Date.now() - 240000_000 },
     ],
   },
 ];
@@ -268,52 +268,52 @@ function DemoModal({ contract, onClose, onStateChange }) {
 
   // ── Actions ──────────────────────────────────────────────────────────────
   const handleConfirmDelivery = () => {
-    addSystemMsg('✅ Buyer has confirmed delivery. Funds released to seller.');
+    addSystemMsg('Buyer has confirmed delivery. Funds released to seller.');
     doStateChange(STATE.COMPLETED);
   };
 
   const handleRequestCancel = () => {
     const who = isBuyer ? 'buyer' : 'seller';
-    const msg = isBuyer ? '✕ Buyer has requested to cancel this transaction.' : '✕ Seller has requested to cancel.';
+    const msg = isBuyer ? 'Buyer has requested to cancel this transaction.' : 'Seller has requested to cancel.';
     const updated = [...localChat, { sender: 'system', type: 'system', message: msg, ts: Date.now() }];
     setLocalChat(updated);
     doStateChange(STATE.CANCEL_REQUESTED, { cancelInitiator: who, chat: updated });
   };
 
   const handleApproveCancel = () => {
-    addSystemMsg('✅ Cancel approved. Funds returned to both parties.');
+    addSystemMsg('Cancel approved. Funds returned to both parties.');
     doStateChange(STATE.CANCELLED);
   };
 
   const handleWithdrawCancel = () => {
-    addSystemMsg('↩ Cancel request withdrawn.');
+    addSystemMsg('Cancel request withdrawn.');
     doStateChange(STATE.ACTIVE, { cancelInitiator: null });
   };
 
   const handleRequestReturn = () => {
-    addSystemMsg('↩ Buyer has requested a return.');
+    addSystemMsg('Buyer has requested a return.');
     doStateChange(STATE.RETURN_REQUESTED, { cancelInitiator: 'buyer' });
   };
 
   const handleApproveReturn = () => {
-    addSystemMsg('✅ Return approved. Funds returned to buyer.');
+    addSystemMsg('Return approved. Funds returned to buyer.');
     doStateChange(STATE.CANCELLED);
   };
 
   const handleWithdrawReturn = () => {
-    addSystemMsg('↩ Return request withdrawn.');
+    addSystemMsg('Return request withdrawn.');
     doStateChange(STATE.ACTIVE, { cancelInitiator: null });
   };
 
   const handleClaimTimeout = () => {
-    addSystemMsg('⏰ Seller claimed funds after buyer timeout.');
+    addSystemMsg('Seller claimed funds after buyer timeout.');
     doStateChange(STATE.SELLER_CLAIMED);
   };
 
   const handleShip = () => {
     const code = `GHN-DEMO${Math.floor(Math.random() * 90000000 + 10000000)}`;
     const now = Date.now();
-    const msg = `📦 Seller has shipped the item. GHN order: ${code} — Track: https://donhang.ghn.vn/?order_code=${code}`;
+    const msg = `Seller has shipped the item. GHN order: ${code} — Track: https://donhang.ghn.vn/?order_code=${code}`;
     const updated = [...localChat, { sender: 'system', type: 'system', message: msg, ts: now }];
     setLocalChat(updated);
     doStateChange(STATE.ACTIVE, { shipped: true, ghn: { code, shippedAt: now }, chat: updated });

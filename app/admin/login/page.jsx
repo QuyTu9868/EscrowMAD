@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { LockIcon } from '../../components/Icons';
 
 export default function AdminLoginPage() {
   const [code, setCode] = useState('');
@@ -34,37 +35,39 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: 380, margin: '0 auto', padding: '80px 20px' }}>
-      <div className="card">
-        <h1 className="card-title">Admin access</h1>
-        <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 20 }}>
-          Enter the 6-digit code from your authenticator app.
+    <main className="admin-auth">
+      <div className="admin-auth-card">
+        <span className="admin-auth-mark"><LockIcon size={16} /></span>
+
+        <h1 className="admin-auth-title">Admin access</h1>
+        <p className="admin-auth-sub">
+          Enter the six digit code from your authenticator app.
         </p>
 
         <form onSubmit={handleSubmit}>
           <input
-            className="input mono"
+            className="input mono admin-code"
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
             placeholder="000000"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            style={{ textAlign: 'center', letterSpacing: '0.4em', fontSize: 20 }}
+            aria-label="Authenticator code"
             autoFocus
           />
 
-          {error && (
-            <p style={{ color: 'var(--danger)', fontSize: 13, marginTop: 12 }}>{error}</p>
-          )}
+          {error && <p className="admin-auth-error mono">{error}</p>}
 
           <button
-            className="btn btn-primary"
+            className="btn btn-primary admin-auth-submit"
             type="submit"
             disabled={loading || code.length !== 6}
-            style={{ width: '100%', marginTop: 16 }}
           >
-            {loading ? 'Checking...' : 'Sign in'}
+            <span className="btn-label">
+              {loading && <span className="spinner" />}
+              {loading ? 'Checking' : 'Sign in'}
+            </span>
           </button>
         </form>
       </div>
