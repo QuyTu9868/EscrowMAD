@@ -450,16 +450,33 @@ function HomeInner() {
   // đèn pin soi trên nền tối. Chỉ tính toạ độ, không re-render React.
   const heroRef = useRef(null);
   const spotlightRef = useRef(null);
+  // Spotlight bam viewport nen dung thang toa do chuot, khong tru rect.
+  // Truoc day no bam .connect-prompt - phan tu da bi .app thut vao 2rem -
+  // nen hieu ung hien ra thanh mot o chu nhat thay vi phu het man hinh.
   const handleHeroMove = (e) => {
-    const hero = heroRef.current, el = spotlightRef.current;
-    if (!hero || !el) return;
-    const rect = hero.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    el.style.background = `radial-gradient(480px circle at ${x}px ${y}px, rgba(255,255,255,0.16), transparent 62%)`;
+    const el = spotlightRef.current;
+    if (!el) return;
+    el.style.background = `radial-gradient(480px circle at ${e.clientX}px ${e.clientY}px, rgba(255,255,255,0.16), transparent 62%)`;
+    el.style.opacity = '1';
   };
   const showSpotlight = () => { if (spotlightRef.current) spotlightRef.current.style.opacity = '1'; };
   const hideSpotlight = () => { if (spotlightRef.current) spotlightRef.current.style.opacity = '0'; };
+
+  // Nghe tren window chu khong tren rieng .connect-prompt: neu gan vao phan tu
+  // do thi dai padding 2rem hai ben va vung navbar thanh diem chet, chuot vao
+  // day la hieu ung dung im.
+  useEffect(() => {
+    if (isConnected) return undefined;
+    const move = (e) => handleHeroMove(e);
+    const leave = () => hideSpotlight();
+    window.addEventListener('mousemove', move);
+    document.addEventListener('mouseleave', leave);
+    return () => {
+      window.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseleave', leave);
+    };
+  }, [isConnected]);
+
 
   useEffect(() => {
     const c = searchParams.get('contract');
@@ -854,7 +871,7 @@ useEffect(() => {
         /* Nút hút theo chuột (magnetic) */
         .magnetic { display: inline-block; transition: transform 0.2s cubic-bezier(0.16,1,0.3,1); will-change: transform; }
         /* Vùng sáng theo chuột trên nền hero tối */
-        .hero-spotlight { position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: 0; mix-blend-mode: soft-light; transition: opacity 0.4s ease; }
+        .hero-spotlight { position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: 0; mix-blend-mode: soft-light; transition: opacity 0.4s ease; }
         .scroll-sep { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 2rem 0 0.5rem; width: 100%; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; opacity: 0.45; }
         .scroll-sep .scroll-arrow { font-size: 0.8rem; }
 

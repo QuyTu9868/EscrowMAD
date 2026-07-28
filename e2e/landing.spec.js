@@ -31,6 +31,46 @@ test.describe('Landing khi chua ket noi vi', () => {
     expect(fatal, `Loi runtime tren landing:\n${fatal.join('\n')}`).toEqual([]);
   });
 
+
+  test('hieu ung theo chuot phu HET man hinh, khong bi cat thanh o', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await page.waitForTimeout(2_000);
+
+    // Truoc day lop nay dung position:absolute nen chi phu .connect-prompt -
+    // phan tu da bi .app thut vao 2rem va day xuong duoi navbar. Ket qua la
+    // hieu ung hien ra thanh mot o chu nhat le loi giua trang.
+    const box = await page.locator('.hero-spotlight').boundingBox();
+    expect(box, 'Khong tim thay lop hieu ung').not.toBeNull();
+    expect(Math.round(box.x), 'Bi thut vao tu trai').toBeLessThanOrEqual(0);
+    expect(Math.round(box.y), 'Bi day xuong duoi navbar').toBeLessThanOrEqual(0);
+    expect(Math.round(box.width), 'Khong phu het chieu ngang').toBeGreaterThanOrEqual(1280);
+    expect(Math.round(box.height), 'Khong phu het chieu doc').toBeGreaterThanOrEqual(900);
+  });
+
+  test('hieu ung bam theo chuot ca o sat mep man hinh', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/');
+    await page.waitForTimeout(2_000);
+
+    const layer = page.locator('.hero-spotlight');
+
+    // Goc tren-trai nam trong dai padding cua .app. Khi listener con gan vao
+    // rieng .connect-prompt thi day la diem chet.
+    await page.mouse.move(8, 8);
+    await expect.poll(async () => layer.evaluate((el) => el.style.background), { timeout: 5_000 })
+      .toContain('8px 8px');
+
+    await page.mouse.move(1270, 890);
+    await expect.poll(async () => layer.evaluate((el) => el.style.background), { timeout: 5_000 })
+      .toContain('1270px 890px');
+
+    // Lop nay co transition 0.4s nen phai cho hien han, kiem ngay se bat trung
+    // dung luc dang mo dan.
+    await expect.poll(async () => layer.evaluate((el) => getComputedStyle(el).opacity), { timeout: 5_000 })
+      .toBe('1');
+  });
+
   test('day du cac muc gioi thieu', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(2_000);
