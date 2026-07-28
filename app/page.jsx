@@ -8,6 +8,7 @@ import {
 import { formatEther, parseEther } from 'viem';
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useReveal } from './hooks/useReveal';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import ShipModal from './components/ShipModal';
@@ -452,10 +453,15 @@ function HomeInner() {
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({ hash });
 
+
   const isSeller    = address && seller && address.toLowerCase() === seller.toLowerCase();
   const isBuyer     = address && buyer  && address.toLowerCase() === buyer.toLowerCase();
   const isInitiator = address && requestInitiator && address.toLowerCase() === requestInitiator.toLowerCase();
   const stateNum    = state !== undefined ? Number(state) : null;
+
+  // Card chi render sau khi doc xong contract, nen phai chay lai observer
+  // moi khi doi hop dong hoac doi trang thai.
+  useReveal([contractAddress, stateNum]);
   const sendChatNotif = useCallback(async (message) => {
     if (!contractAddress) return;
     await addDoc(collection(db, 'chats', contractAddress.toLowerCase(), 'messages'), {
@@ -1018,7 +1024,7 @@ useEffect(() => {
 
             {txStatus && <div className="status-bar">{txStatus}</div>}
 
-<div className="card">
+<div className="card reveal" style={{ '--index': 0 }}>
   <div className="card-title">Contract Info</div>
 
   {itemImageHash && (
@@ -1055,7 +1061,7 @@ useEffect(() => {
               )}
             </div>
 
-            <div className="card">
+            <div className="card reveal" style={{ '--index': 1 }}>
               <div className="card-title">Participants</div>
               <div className="info-row" style={isSeller ? {background:'rgba(124,58,237,0.08)', borderRadius:'6px', padding:'0.5rem 0.6rem', margin:'0 -0.5rem'} : {}}>
                   <span className="info-label">Seller</span>
@@ -1067,7 +1073,7 @@ useEffect(() => {
             </div>
             </div>
 
-            <div className="card">
+            <div className="card reveal" style={{ '--index': 2 }}>
               <div className="card-title">Actions</div>
 
               {stateNum === STATE.AWAITING_BUYER && isBuyer === false && !isSeller && (
@@ -1260,7 +1266,7 @@ useEffect(() => {
             </div>
 
             {(isBuyer || isSeller) && stateNum !== null && (
-              <div className="card">
+              <div className="card reveal" style={{ '--index': 3 }}>
                 <div className="card-title">Chat</div>
                 <div className="chat-messages">
                   {chatMessages.length === 0 && <div className="no-role" style={{padding:'0.5rem'}}>No messages yet.</div>}

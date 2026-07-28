@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useReveal } from '../hooks/useReveal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { SunIcon, MoonIcon, ArrowLeftIcon } from '../components/Icons';
 
@@ -54,6 +55,7 @@ const PHASES = [
 
 export default function RoadmapPage() {
   const router = useRouter();
+  useReveal();
   const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
@@ -149,8 +151,8 @@ export default function RoadmapPage() {
 
         <div className="timeline">
           <div className="tl-rail" />
-          {PHASES.map((p) => (
-            <div key={p.n} className={`phase ${p.status}`}>
+          {PHASES.map((p, i) => (
+            <div key={p.n} className={`phase reveal ${p.status}`} style={{ '--index': i }}>
               <div className="phase-marker">{p.n}</div>
               <div className="phase-head">
                 <span className="phase-title">{p.title}</span>

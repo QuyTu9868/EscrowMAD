@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useReveal } from '../hooks/useReveal';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, usePublicClient } from 'wagmi';
 import DemoContracts from './DemoContracts';
@@ -43,6 +44,8 @@ export default function MyContractsPage() {
   const { isConnected, address } = useAccount();
   const publicClient = usePublicClient();
   const [contracts, setContracts] = useState([]);
+  // Danh sach nap bat dong bo nen phai chay lai observer khi co du lieu
+  useReveal([contracts.length]);
   const [contractStates, setContractStates] = useState({});
   const [contractDescriptions, setContractDescriptions] = useState({});
   const [contractImages, setContractImages] = useState({});
@@ -231,7 +234,7 @@ export default function MyContractsPage() {
         ) : (
           <div className="contract-grid">
             {contracts.map((c, i) => (
-              <div key={i} className="contract-card" onClick={() => handleOpen(c.addr)}>
+              <div key={i} className="contract-card reveal" style={{ '--index': i }} onClick={() => handleOpen(c.addr)}>
                 {contractImages[c.addr] && (
                   <img
                     src={`https://gateway.pinata.cloud/ipfs/${contractImages[c.addr]}`}
