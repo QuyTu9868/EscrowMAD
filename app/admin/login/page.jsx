@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LockIcon } from '../../components/Icons';
+import ThemeShell from '../../components/ThemeShell';
 
 export default function AdminLoginPage() {
   const [code, setCode] = useState('');
@@ -35,7 +36,8 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="admin-auth">
+    <ThemeShell showToggle={false}>
+      <main className="admin-auth">
       <div className="admin-auth-card">
         <span className="admin-auth-mark"><LockIcon size={16} /></span>
 
@@ -71,6 +73,7 @@ export default function AdminLoginPage() {
           </button>
         </form>
       </div>
-    </main>
+      </main>
+    </ThemeShell>
   );
 }

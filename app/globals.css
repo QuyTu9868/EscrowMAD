@@ -42,21 +42,37 @@
   color: #17160F;
 }
 
+/* Dark mode: gần trung tính, chỉ giữ chút hơi ấm cho đồng bộ với light mode.
+   Bản trước lệch vàng 8-16 điểm giữa kênh R và B nên đọc ra thành nâu/sepia
+   chứ không phải đen. Ở đây giữ lệch 2-5 điểm: vẫn ấm nhưng vẫn là dark mode. */
 .theme-dark {
-  --bg: #17150F;
-  --surface: #1D1B14;
-  --surface-2: #232016;
-  --border: #322E22;
-  --text: #F3F1E9;
-  --muted: #9A9587;
-  --navbar-bg: rgba(23,21,15,0.88);
-  --grid-color: #221F16;
-  --grid-opacity: 0.45;
-  --input-bg: #1D1B14;
-  --accent: #F3F1E9;
-  --accent-contrast: #17160F;
-  background: #17150F;
-  color: #F3F1E9;
+  --bg: #141413;
+  --surface: #1C1B1A;
+  --surface-2: #242322;
+  --border: #33322F;
+  --text: #EDEBE6;
+  --muted: #918F89;
+  --navbar-bg: rgba(20,20,19,0.88);
+  --grid-color: #232221;
+  --grid-opacity: 0.5;
+  --input-bg: #1C1B1A;
+  --accent: #EDEBE6;
+  --accent-contrast: #141413;
+
+  /* Pastel ngữ nghĩa phải đảo lại cho nền tối: nền chìm, chữ nổi.
+     Dùng lại bản sáng thì badge sẽ chói như đèn trên nền đen. */
+  --accent2: #7FB6DB;
+  --accent2-bg: #17262F;
+  --danger: #E08B85;
+  --danger-bg: #2E1B1A;
+  --success: #8FBF95;
+  --success-bg: #1A2620;
+  --warn: #D6AC63;
+  --warn-bg: #2B2317;
+  --gold: #D4B662;
+
+  background: #141413;
+  color: #EDEBE6;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -228,3 +244,6 @@ body {
 .evidence-item figcaption { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
 .evidence-item img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
 .evidence-missing { height: 200px; display: grid; place-items: center; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; }
+
+/* Nút đổi theme thả nổi — dùng cho trang không có navbar (admin) */
+.theme-toggle-floating { position: fixed; top: 1.25rem; right: 1.5rem; z-index: 50; background: var(--surface); }

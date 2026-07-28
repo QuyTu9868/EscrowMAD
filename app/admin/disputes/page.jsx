@@ -7,6 +7,7 @@ import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/fire
 import { ADMIN_COOKIE, isSessionValid } from '../../../lib/adminSession';
 import { ESCROW_ABI, FACTORY_ABI, STATE } from '../../../lib/escrowAbi';
 import RevealOnScroll from '../../components/RevealOnScroll';
+import ThemeShell from '../../components/ThemeShell';
 
 // Trang doc du lieu song nen khong duoc cache.
 export const dynamic = 'force-dynamic';
@@ -125,8 +126,9 @@ export default async function AdminDisputesPage() {
   const [pending, resolved] = await Promise.all([loadPending(), loadResolved()]);
 
   return (
-    <main className="shell admin-page">
-      <RevealOnScroll />
+    <ThemeShell>
+      <main className="shell admin-page">
+        <RevealOnScroll />
 
       <header className="admin-head">
         <h1>Disputes</h1>
@@ -213,6 +215,7 @@ export default async function AdminDisputesPage() {
           ))}
         </div>
       </section>
-    </main>
+      </main>
+    </ThemeShell>
   );
 }
