@@ -120,12 +120,29 @@ Mock server ở CP-3 không lộ ra được mấy cái này. Chạy với key t
 
 **3. Trần 8000 token/phút (TPM) của gói free.** Chạy nhiều đơn liên tiếp là dính `HTTP 429`.
 
-**CẢI CHÍNH (đo lại ngày 2026-07-26):** ban đầu tôi ghi "hai ảnh ngốn ~7900 token" - **sai**. Con số 7931 trong thông báo 429 là *tổng token đã dùng trong cả phút*, không phải chi phí một request. Số đo đúng:
+**CẢI CHÍNH 2 lần, con số cuối cùng đo ngày 2026-07-28.** Ghi lại cả 2 lần sai để không lặp lại:
 
-- Token tính theo **kích thước ảnh (pixel)**, không theo dung lượng file. Ảnh 600x600 tốn ~1290 token dù là PNG 290KB hay JPEG 32KB.
-- Một đơn kèm **3 ảnh + prompt = ~5000 token**. Vẫn dưới trần 8000, nhưng chỉ đủ cho **một đơn mỗi phút**.
+- **Sai lần 1:** ghi "hai ảnh ngốn ~7900 token". Con số 7931 trong thông báo 429 là *tổng token đã dùng trong cả phút*, không phải chi phí một request.
+- **Sai lần 2:** sửa thành "token tính theo kích thước ảnh (pixel)". Vế "không theo dung lượng file" thì đúng, nhưng "theo pixel" vẫn **sai**. Nguyên nhân: thấy 2 ảnh khác dung lượng cùng giá rồi tự suy ra, không đo thêm ảnh khác kích thước.
 
-Xử lý: thêm `GROQ_DELAY_MS` (mặc định 60 giây, vì TPM reset theo phút) chờ giữa các đơn. Gặp 429 thì in lý do rõ ràng rồi dừng, **không retry mù**. Muốn nhanh hơn phải thu nhỏ ảnh trước khi gửi, nhưng cần thêm thư viện xử lý ảnh nên chưa làm.
+**Đúng: token chỉ phụ thuộc TỶ LỆ KHUNG HÌNH.** Không phụ thuộc số pixel, không phụ thuộc dung lượng file. Đo 13 trường hợp qua `usage.prompt_tokens`:
+
+| Ảnh | File | Token |
+|---|---|---|
+| 256x256 PNG không nén | 193 KB | 1282 |
+| 256x256 JPEG q30 | 7 KB | 1282 |
+| 64x64 / 512x512 / 2048x2048 | - | 1282 (đều nhau) |
+| 3000x4000 (tỷ lệ 3:4) | 116 KB | 1794 |
+| 300x400 (cùng tỷ lệ 3:4) | 4 KB | 1794 |
+| 1920x1080 (16:9) | 29 KB | 770 |
+
+Giá theo tỷ lệ, đối xứng (4:3 = 3:4, 16:9 = 9:16): dẹt 2:1 hoặc 16:9 = **770**, vuông = **1282**, khoảng 1.25-1.6 = **1794** (đắt nhất, quét từ 1.0 đến 8.0).
+
+**Hệ quả: bước resize không tiết kiệm một token nào.** `fit: 'inside'` giữ nguyên tỷ lệ, mà giá chỉ theo tỷ lệ. Vẫn giữ resize nhưng vì lý do khác: Groq chặn base64 ở 4MB, ảnh điện thoại thật 3-5MB base64 sẽ vượt; và gửi 12KB thay vì 116KB thì nhanh hơn.
+
+**Đơn xấu nhất (3 ảnh tỷ lệ 1.25 + prompt thật) = 5676 token**, còn dư 2324 dưới trần 8000. Nên **một đơn mỗi phút luôn chạy được bất kể ảnh to nhỏ**, còn hai đơn thì không bao giờ lọt.
+
+Xử lý: `GROQ_DELAY_MS` mặc định 62 giây chờ giữa các đơn (TPM reset theo phút). Gặp 429 thì in lý do rõ ràng rồi dừng, **không retry mù**.
 
 Cách khoanh vùng lúc đó (ghi lại để lần sau nhanh hơn): gọi Groq 4 lần tách từng yếu tố - text + json mode (OK), ảnh không json mode (OK nhưng lộ `<think>`), ảnh + json mode (lỗi), 1 ảnh + json mode. Nhờ vậy biết chắc lỗi do tổ hợp `<think>` + JSON mode chứ không phải do ảnh hay sai tên model.
 

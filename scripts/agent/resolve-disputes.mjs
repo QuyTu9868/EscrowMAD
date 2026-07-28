@@ -18,8 +18,8 @@ const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.6-27b';
 const IPFS_GATEWAY = process.env.IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs/';
 
 // Cho giua cac don cho khoi cham tran 8000 token/phut cua goi free.
-// Do thuc te: mot don kem 3 anh ton ~5000 token, nen hai don lien tiep la
-// vuot tran. Chi chay duoc mot don moi phut, va TPM reset theo phut.
+// Do thuc te tren don XAU NHAT (3 anh o ty le dat nhat + prompt that): 5676
+// token. Mot don luon lot, hai don lien tiep thi khong bao gio lot.
 const GROQ_DELAY_MS = Number(process.env.GROQ_DELAY_MS ?? 62_000);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,16 +33,20 @@ function requireEnv(name) {
   return value;
 }
 
-// Tai anh tu IPFS, THU NHO roi doi sang base64 de gui cho Groq.
+// Tai anh tu IPFS, thu nho roi doi sang base64 de gui cho Groq.
 //
-// Do thuc te: token tinh theo KICH THUOC ANH (pixel), khong theo dung luong
-// file. Anh 600x600 ton ~1290 token du la PNG 290KB hay JPEG 32KB. Mot don
-// kem 3 anh va prompt ton ~5000 token - vua du duoi tran 8000/phut, nhung
-// chi du cho MOT don moi phut.
+// THU NHO KHONG GIAM DUOC TOKEN NAO. Token chi phu thuoc TY LE khung hinh,
+// khong phu thuoc so pixel lan dung luong file. Do thuc te:
+//   256x256 PNG 193KB va 256x256 JPEG 7KB  -> deu 1282 token
+//   64x64 va 2048x2048                     -> deu 1282 token
+//   3000x4000 va 300x400 (cung ty le 3:4)  -> deu 1794 token
+// resize() giu nguyen ty le nen gia khong doi. Ty le dat nhat do duoc la
+// 1.25 (1794 token/anh), tuc don 3 anh ton toi da 5676 token - luon duoi
+// tran 8000/phut BAT KE anh to nho the nao.
 //
-// Van thu nho vi anh chup dien thoai thuong 3000x4000, de nguyen thi mot tam
-// da du vuot tran. Chan canh dai o 768px la du de doi chieu "co phai cung mon
-// hang khong". Doi sang JPEG con giam dung luong gui di khoang 9 lan.
+// Van thu nho vi hai ly do khac han: Groq chan base64 o 4MB ma anh dien
+// thoai that co the 3-5MB (base64 con phinh them ~1.37 lan), va gui 12KB
+// thay vi 116KB thi request nhanh hon nhieu.
 const MAX_EDGE = Number(process.env.IMAGE_MAX_EDGE ?? 768);
 
 async function fetchImageAsDataUrl(ipfsHash) {
@@ -121,8 +125,9 @@ async function askGroq({ apiKey, description, orderedImage, shippedImage, receiv
   if (res.status === 429) {
     throw new Error(
       `Groq tu choi vi vuot gioi han token moi phut (TPM).\n` +
-      `Anh chiem rat nhieu token dau vao, moi don gan cham tran cua goi free.\n` +
-      `Doi mot phut roi chay lai, hoac tang GROQ_DELAY_MS.\n` +
+      `Moi don ton toi da ~5700 token ma goi free chi cho 8000/phut, nen chi\n` +
+      `chay duoc dung MOT don moi phut. Doi mot phut roi chay lai, hoac tang\n` +
+      `GROQ_DELAY_MS. Thu nho anh KHONG giup gi - xem chu thich o MAX_EDGE.\n` +
       `Nguyen van: ${raw}`,
     );
   }
