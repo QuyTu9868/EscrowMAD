@@ -22,7 +22,7 @@ import {
 } from './components/Icons';
 import { ESCROW_ABI as ABI, FACTORY_ABI, STATE, STATE_LABELS, STATE_COLORS, DONE_STATES } from '../lib/escrowAbi';
 
-const WHY_ICONS = { LockIcon, ShieldIcon, ClockIcon, ChatIcon, PackageIcon, MailIcon, CoinIcon, StarIcon };
+const WHY_ICONS = { LockIcon, ShieldIcon, ClockIcon, ChatIcon, PackageIcon, MailIcon, CoinIcon, StarIcon, CameraIcon, AlertIcon };
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 
@@ -210,7 +210,10 @@ function Magnetic({ children, strength = 0.4, className = '' }) {
 }
 
 const WHY_ITEMS = [
-  { icon:'LockIcon',  title:'No Trusted Third Party',      desc:'Code is the only arbiter. No platform can freeze funds, take fees, or reverse decisions.' },
+  { icon:'ShieldIcon',title:'AI Settles Deadlocks',        desc:'When neither side backs down, an agent compares the listing photo against the photo of what arrived, then releases or refunds on-chain. No human arbiter, no waiting on support.' },
+  { icon:'LockIcon',  title:'The Agent Is Kept On A Leash',desc:'It never holds a key. Every instruction passes a policy gateway first, and the contract only accepts a winner, never an amount or an address.' },
+  { icon:'CameraIcon',title:'Photographed At Every Step',  desc:'The seller photographs what they ship, the buyer photographs what arrives. Both land on IPFS, and both are what the agent reads.' },
+  { icon:'CoinIcon',  title:'No Trusted Third Party',      desc:'Code is the only arbiter. No platform can freeze funds, take fees, or reverse decisions.' },
   { icon:'ShieldIcon',title:'Scam-Resistant by Design',    desc:'Both parties post a 20% deposit before activation. Scammers have real skin in the game.' },
   { icon:'ClockIcon', title:'Time-Locked Auto-Resolution', desc:'Disputes auto-resolve in 72 hours. Shipping claims close in 17 days. Zero deadlock.' },
   { icon:'ChatIcon',  title:'Built-in Evidence Chat',      desc:'Real-time chat with IPFS image uploads. Every claim backed by immutable, on-chain proof.' },
@@ -226,7 +229,16 @@ const HOW_STEPS = [
   { num:'③', label:'Join',     desc:'Buyer inspects item, pays price + 20% deposit' },
   { num:'④', label:'Ship',     desc:'Seller creates GHN order in-app — buyer gets email + tracking link' },
   { num:'⑤', label:'Confirm',  desc:'Buyer confirms delivery — funds released instantly to seller' },
-  { num:'⑥', label:'Dispute?', desc:'Cancel or return request — 72h auto-resolve, both get email alerts' },
+  { num:'⑥', label:'Return',   desc:'Buyer returns with a photo of what arrived — 72h auto-approve if the seller stays quiet' },
+  { num:'⑦', label:'Dispute',  desc:'Still stuck? Either side escalates. The agent reads both photos and settles it on-chain' },
+];
+
+
+const AGENT_FLOW = [
+  { icon:'AlertIcon',  title:'Either side escalates', desc:'Buyer or seller raises a dispute. Funds freeze where they are, and every other action on the escrow closes.' },
+  { icon:'CameraIcon', title:'Two photos go up',      desc:'What the seller listed, and what the buyer says turned up. Both were already on IPFS before the dispute started.' },
+  { icon:'ShieldIcon', title:'The agent reads them',  desc:'It compares the pair against the item description and picks a side, in writing, with its reasoning recorded.' },
+  { icon:'CoinIcon',   title:'It settles on-chain',   desc:'The whole pool goes to whoever it ruled for. One transaction, no partial splits, nothing left to negotiate.' },
 ];
 
 function LandingCards() {
@@ -301,6 +313,38 @@ function LandingCards() {
           ))}
         </div>
       </div>
+      <hr className="landing-divider" style={{marginTop:'4rem'}} />
+      <div className="landing-section">
+        <Reveal className="landing-section-label">When Both Sides Dig In</Reveal>
+        <Reveal as="p" className="agent-lead" delay={60}>
+          Most escrows never get here. For the ones that do, an agent looks at the
+          evidence and settles it, so nobody waits on a support queue.
+        </Reveal>
+
+        <div className="agent-flow">
+          {AGENT_FLOW.map(({ icon, title, desc }, i) => {
+            const Icon = WHY_ICONS[icon];
+            return (
+              <Reveal as="div" className="agent-step" key={title} delay={i * 90}>
+                <span className="agent-step-mark"><Icon size={15} /></span>
+                <div className="agent-step-title">{title}</div>
+                <div className="agent-step-desc">{desc}</div>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        <Reveal as="div" className="agent-guard" delay={140}>
+          <div className="agent-guard-label"><LockIcon size={13} /> What the agent cannot do</div>
+          <ul className="agent-guard-list">
+            <li>Hold a private key. Signing happens server-side, never in the agent.</li>
+            <li>Name an amount or a recipient. The contract takes a winner and nothing else.</li>
+            <li>Reach any other endpoint, send more than twenty instructions an hour, or add a field to the request. A policy gateway rejects all three before they land.</li>
+            <li>Reopen a settled case. Once funds move, the state is final.</li>
+          </ul>
+        </Reveal>
+      </div>
+
       <Reveal as="div" className="landing-footer-cta">
         <div className="footer-glow" />
         <h2 className="footer-cta-title">Ready to transact<br/>without trust?</h2>
@@ -813,6 +857,34 @@ useEffect(() => {
         .hero-spotlight { position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: 0; mix-blend-mode: soft-light; transition: opacity 0.4s ease; }
         .scroll-sep { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 2rem 0 0.5rem; width: 100%; font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; opacity: 0.45; }
         .scroll-sep .scroll-arrow { font-size: 0.8rem; }
+
+        /* ── Khối giới thiệu AI agent xử lý tranh chấp ── */
+        .agent-lead { font-family: var(--font-mono); font-size: 0.92rem; color: var(--muted); line-height: 1.85; max-width: 60ch; margin-bottom: 2.75rem; }
+
+        .agent-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; counter-reset: agentstep; }
+        .agent-step { position: relative; padding: 1.5rem 1.35rem 1.6rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s; }
+        .agent-step:hover { transform: translateY(-3px); border-color: var(--accent2); }
+        /* Đường nối giữa các bước, ẩn ở bước cuối */
+        .agent-step::after { content: ''; position: absolute; top: 2.35rem; right: -1.1rem; width: 1.1rem; height: 1px; background: var(--border); }
+        .agent-step:last-child::after { display: none; }
+        .agent-step-mark { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); color: var(--accent2); margin-bottom: 0.95rem; }
+        .agent-step-title { font-family: var(--font-display); font-size: 0.94rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+        .agent-step-desc { font-family: var(--font-mono); font-size: 0.73rem; color: var(--muted); line-height: 1.75; }
+
+        .agent-guard { margin-top: 2.25rem; border: 1px solid var(--border); border-left: 2px solid var(--danger); border-radius: 12px; padding: 1.5rem 1.75rem; background: var(--surface); }
+        .agent-guard-label { display: flex; align-items: center; gap: 0.45rem; font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--danger); margin-bottom: 1rem; }
+        .agent-guard-list { list-style: none; display: grid; gap: 0.7rem; }
+        .agent-guard-list li { position: relative; padding-left: 1.1rem; font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); line-height: 1.8; }
+        .agent-guard-list li::before { content: ''; position: absolute; left: 0; top: 0.68em; width: 5px; height: 1px; background: var(--danger); }
+
+        @media (max-width: 900px) {
+          .agent-flow { grid-template-columns: repeat(2, 1fr); }
+          .agent-step::after { display: none; }
+        }
+        @media (max-width: 560px) {
+          .agent-flow { grid-template-columns: 1fr; }
+        }
+
         .landing-divider { border: none; border-top: 1px solid var(--border); width: 90%; max-width: 1100px; margin: 0 auto; }
         .landing-section { width: 90%; max-width: 1100px; padding: 4rem 0 0; text-align: left; }
         .landing-section-label { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.24em; color: var(--muted); text-transform: uppercase; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.6rem; }
@@ -831,8 +903,8 @@ useEffect(() => {
         .why-card-icon  { width: 24px; height: 24px; display:block; margin-bottom:0.85rem; color: var(--text); }
         .why-card-title { font-size:0.98rem; font-weight:700; color:var(--text); margin-bottom:0.4rem; font-family: var(--font-display); }
         .why-card-desc  { font-family:var(--font-mono); font-size:0.8rem; color:var(--muted); line-height:1.7; }
-        .tl-track { display:grid; grid-template-columns:repeat(6,1fr); gap:0; position:relative; }
-        .tl-track::before { content:''; position:absolute; top:23px; left:calc(100%/12); right:calc(100%/12); height:1px; background: var(--border); z-index:0; }
+        .tl-track { display:grid; grid-template-columns:repeat(7,1fr); gap:0; position:relative; }
+        .tl-track::before { content:''; position:absolute; top:23px; left:calc(100%/14); right:calc(100%/14); height:1px; background: var(--border); z-index:0; }
         .tl-step { display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 0.5rem; position:relative; z-index:1; }
         .tl-num { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.9rem; font-weight:700; color:var(--text); background:var(--surface); border:1.5px solid var(--border); margin-bottom:0.9rem; transition:border-color 0.2s; }
         .tl-step:hover .tl-num { border-color: var(--text); }
@@ -859,7 +931,7 @@ useEffect(() => {
         @media (max-width:720px) {
           .about-bento { grid-template-columns:1fr; } .about-cell.wide { grid-column:1; }
           .why-grid { grid-template-columns:1fr 1fr; }
-          .tl-track { grid-template-columns:repeat(3,1fr); row-gap:1.5rem; } .tl-track::before { display:none; }
+          .tl-track { grid-template-columns:repeat(2,1fr); row-gap:1.6rem; } .tl-track::before { display:none; }
         }
         @media (max-width:480px) {
           .why-grid { grid-template-columns:1fr; }
