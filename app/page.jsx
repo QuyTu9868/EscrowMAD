@@ -12,6 +12,7 @@ import { useReveal } from './hooks/useReveal';
 import { db } from './firebase';
 import { collection, addDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import ShipModal from './components/ShipModal';
+import EvidenceModal from './components/EvidenceModal';
 import ReviewPanel from './components/ReviewPanel';
 import { sendEscrowEmail } from './emailService';
 import {
@@ -24,6 +25,11 @@ import { ESCROW_ABI as ABI, FACTORY_ABI, STATE, STATE_LABELS, STATE_COLORS, DONE
 const WHY_ICONS = { LockIcon, ShieldIcon, ClockIcon, ChatIcon, PackageIcon, MailIcon, CoinIcon, StarIcon };
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
+
+
+// Chi coi la co anh khi hash trong giong CID that. Ban cu tung luu chuoi
+// 'evidence' cung, gay ra tranh chap ma agent tai anh khong duoc.
+const isIpfsHash = (h) => typeof h === 'string' && /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[a-z2-7]{50,})$/.test(h);
 
 const short  = (a) => a ? `${a.slice(0,6)}...${a.slice(-4)}` : '—';
 const fmt    = (w) => w != null ? `${formatEther(w)} ETH` : '—';
@@ -336,6 +342,7 @@ function HomeInner() {
   const [shippedAt,       setShippedAt]       = useState(null);
   const [isDark,          setIsDark]          = useState(true);
   const [isDeploying,     setIsDeploying]     = useState(false);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [showShipModal, setShowShipModal] = useState(false);
   const [deployEmail,   setDeployEmail]   = useState('');
   const [buyerEmail,    setBuyerEmail]    = useState('');
@@ -636,7 +643,31 @@ useEffect(() => {
     }
   };
 
-  const handleShipped = async (orderCode) => {
+
+  // Buyer doi tra hang kem anh that. Truoc day cho nay gui chuoi 'evidence'
+  // cung nen agent khong bao gio tai duoc anh.
+  const handleRequestReturn = async (evidenceHash, note) => {
+    setShowEvidenceModal(false);
+    tx('requestReturn', [evidenceHash], null,
+       note ? `Buyer requested a return: ${note}` : 'Buyer has requested a return.');
+
+    const { sellerEmail } = await getEmailsFromFirestore(contractAddress);
+    sendEscrowEmail({
+      toEmail: sellerEmail,
+      recipientName: 'Seller',
+      eventTitle: 'Buyer requested a return',
+      eventMessage: 'The buyer has requested to return the item, with a photo attached. Please review and approve, or wait for auto-resolution in 72 hours.',
+      itemDescription: itemDescription,
+      contractAddress: contractAddress,
+      amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—',
+    });
+  };
+
+  const handleShipped = async (orderCode, proofHash) => {
+    // Luu anh tinh trang hang luc gui di. Contract da co san ham nay,
+    // truoc gio chua ai goi. Day la bang chung phia seller.
+    if (proofHash) tx('uploadDeliveryProof', [proofHash], null, null);
+
     const now = Math.floor(Date.now() / 1000);
     localStorage.setItem(shippedKey(contractAddress), JSON.stringify({ at: now }));
     setShipped(true); setShippedAt(now);
@@ -1123,12 +1154,7 @@ useEffect(() => {
                       </span>
                       {!shipped && <span className="btn-sub">Awaiting shipment</span>}
                     </button>
-                    <button className={`btn ${shipped ? 'btn-warn' : 'btn-claim-locked'}`} onClick={shipped ? () => {
-                      tx('requestReturn', ['evidence'], null, 'Buyer has requested a return.');
-                      getEmailsFromFirestore(contractAddress).then(({ sellerEmail }) => {
-                        sendEscrowEmail({ toEmail: sellerEmail, recipientName: 'Seller', eventTitle: 'Buyer requested a return', eventMessage: 'The buyer has requested to return the item. Please review and approve or wait for auto-resolution in 72 hours.', itemDescription: itemDescription, contractAddress: contractAddress, amount: itemPrice != null ? `${formatEther(itemPrice)} ETH` : '—' });
-                      });
-                    } : undefined} disabled={isLoading || !shipped}>
+                    <button className={`btn ${shipped ? 'btn-warn' : 'btn-claim-locked'}`} onClick={shipped ? () => setShowEvidenceModal(true) : undefined} disabled={isLoading || !shipped}>
                       <span className="btn-label">{isLoading && shipped && <span className="spinner" />}<UndoIcon size={13}/> Return</span>
                       {!shipped && <span className="btn-sub">Awaiting shipment</span>}
                     </button>
@@ -1217,7 +1243,7 @@ useEffect(() => {
 
               {[STATE.ACTIVE, STATE.CANCEL_REQUESTED, STATE.RETURN_REQUESTED].includes(stateNum) && (isBuyer || isSeller) && (
                 <div className="actions single" style={{marginTop:'0.75rem'}}>
-                  {itemImageHash && returnEvidenceHash ? (
+                  {isIpfsHash(itemImageHash) && isIpfsHash(returnEvidenceHash) ? (
                     <button className="btn btn-danger" style={{width:'100%'}} disabled={isLoading} onClick={() => {
                       if (!window.confirm('Raise a dispute?\n\nAn AI agent will compare the listing photo with your photo of the delivered item, then release the funds to whoever it decides. This cannot be undone.')) return;
                       tx('raiseDispute', [], null, 'Dispute raised. An AI agent will review the evidence.');
@@ -1303,7 +1329,14 @@ useEffect(() => {
           </div>
         )}
       </div>
-      <ShipModal
+      <EvidenceModal
+  isOpen={showEvidenceModal}
+  onClose={() => setShowEvidenceModal(false)}
+  onConfirm={handleRequestReturn}
+  isLoading={isLoading}
+/>
+
+<ShipModal
   isOpen={showShipModal}
   onClose={() => setShowShipModal(false)}
   onConfirm={handleShipped}

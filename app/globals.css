@@ -247,3 +247,22 @@ body {
 
 /* Nút đổi theme thả nổi — dùng cho trang không có navbar (admin) */
 .theme-toggle-floating { position: fixed; top: 1.25rem; right: 1.5rem; z-index: 50; background: var(--surface); }
+
+/* ── Modal dùng chung ── */
+.modal-backdrop { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.45); backdrop-filter: blur(3px); display: grid; place-items: center; padding: 1.5rem; }
+.modal-panel { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem 1.85rem; max-height: 90vh; overflow-y: auto; }
+.modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+.modal-head h2 { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 400; letter-spacing: -0.02em; line-height: 1.15; }
+.modal-head button { background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0.2rem; display: flex; }
+.modal-head button:hover { color: var(--text); }
+.modal-lead { color: var(--muted); font-size: 0.82rem; line-height: 1.65; margin-bottom: 1.25rem; }
+.modal-error { color: var(--danger); font-size: 0.7rem; margin-top: 0.85rem; display: flex; align-items: center; gap: 0.35rem; }
+.modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.35rem; }
+
+.evidence-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; height: 130px; border: 1px dashed var(--border); border-radius: 8px; cursor: pointer; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); text-align: center; padding: 0 1rem; }
+.evidence-drop:hover { border-color: var(--text); color: var(--text); }
+.evidence-drop input { display: none; }
+.evidence-preview { position: relative; }
+.evidence-preview img { width: 100%; height: 170px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+.evidence-preview button { position: absolute; top: 0.55rem; right: 0.55rem; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); }
+.evidence-note { margin-top: 0.85rem; resize: vertical; font-family: inherit; font-size: 0.85rem; line-height: 1.6; }

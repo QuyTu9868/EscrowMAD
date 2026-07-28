@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { installMockWallet, connectWallet, ACCOUNTS } from './helpers/mockWallet.js';
-import { makeActiveEscrow, makeEscrowWithBothImages, getState, getBalance } from './helpers/chain.js';
+import { makeActiveEscrow, makeEscrowWithBothImages, getState, getBalance, createEscrow, uploadItemImage, joinAsBuyer, requestReturn } from './helpers/chain.js';
 
 // Nut Raise Dispute la phan moi them va chua ai bam thu lan nao.
 // Dieu kien hien nut: co DU 2 anh (anh seller dang + anh buyer chup luc nhan).
@@ -52,6 +52,23 @@ test.describe('Nut Raise Dispute', () => {
     await page.waitForTimeout(5_000);
 
     expect(Number(await getState(escrow))).toBe(3); // van la RETURN_REQUESTED
+  });
+
+  test('AN khi hash bang chung khong phai IPFS that', async ({ page }) => {
+    // Ban cu cua nut Return gui thang chuoi 'evidence' vao contract thay vi
+    // hash IPFS. Hash do van truthy nen nut Dispute cu hien, roi agent tai
+    // anh khong duoc. Dung tranh chap voi don kieu nay.
+    const escrow = await createEscrow();
+    await uploadItemImage(escrow);
+    await joinAsBuyer(escrow);
+    await requestReturn(escrow, 'evidence');
+
+    await installMockWallet(page, ACCOUNTS.buyer);
+    await page.goto(`/?contract=${escrow}`);
+    await connectWallet(page, ACCOUNTS.buyer);
+
+    await expect(page.getByRole('button', { name: /raise dispute/i })).toHaveCount(0);
+    await expect(page.getByText(/a dispute needs both photos/i)).toBeVisible();
   });
 
   test('nguoi ngoai khong thay nut', async ({ page }) => {

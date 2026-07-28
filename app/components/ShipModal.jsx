@@ -3,7 +3,7 @@
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
-import { CheckIcon, CloseIcon, PackageIcon, AlertIcon, CelebrateIcon, SearchIcon, ExternalLinkIcon } from './Icons';
+import { CheckIcon, CloseIcon, PackageIcon, AlertIcon, CelebrateIcon, SearchIcon, ExternalLinkIcon , CameraIcon } from './Icons';
 
 // const GHN_DISTRICT_URL = 'https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/district';
 // const GHN_WARD_URL     = 'https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/ward';
@@ -24,6 +24,9 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
   const [provinces,   setProvinces]   = useState([]);
   const [districts,   setDistricts]   = useState([]);
   const [wards,       setWards]       = useState([]);
+  const [proofFile,   setProofFile]   = useState(null);
+  const [proofPreview, setProofPreview] = useState('');
+  const [uploading,   setUploading]   = useState(false);
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedWard,     setSelectedWard]     = useState('');
@@ -114,6 +117,8 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
     if (!toPhone.trim())         return setError('Please enter recipient phone.');
     if (!buyerDistrictId)        return setError('Buyer address not found. Please wait.');
     if (!weight || Number(weight) <= 0) return setError('Weight must be > 0.');
+    // Anh nay la bang chung cua seller ve tinh trang hang luc gui di.
+    if (!proofFile) return setError('Please attach a photo of the item you are shipping.');
 
     setStep(2);
     try {
@@ -140,9 +145,19 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
         return setError(JSON.stringify(data));
       }
 
+      let proofHash = '';
+      try {
+        setUploading(true);
+        const form = new FormData();
+        form.append('file', proofFile);
+        const up = await fetch('/api/upload-ipfs', { method: 'POST', body: form });
+        if (up.ok) proofHash = (await up.json()).hash;
+      } catch { /* khong chan viec gui hang neu upload loi */ }
+      finally { setUploading(false); }
+
       setOrderCode(data.order_code);
       setStep(3);
-      onConfirm(data.order_code); // callback về page.jsx để lưu Firestore + mark shipped
+      onConfirm(data.order_code, proofHash); // callback về page.jsx để lưu Firestore + mark shipped
     } catch (e) {
       setStep(1);
       setError('Network error. Please try again.');
@@ -233,6 +248,47 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
               </div>
             )}
 
+            {/* Ảnh hàng thực tế lúc gửi — bằng chứng của seller, và là thứ
+                AI agent đối chiếu nếu sau này có tranh chấp. */}
+            <div style={{ marginTop: '0.9rem' }}>
+              <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.66rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '0.5rem' }}>
+                Photo of the item being shipped
+              </label>
+
+              {proofPreview ? (
+                <div style={{ position: 'relative' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={proofPreview} alt="Item being shipped" style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border)', display: 'block' }} />
+                  <button
+                    type="button"
+                    onClick={() => { setProofFile(null); setProofPreview(''); }}
+                    style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0.3rem 0.55rem', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--muted)' }}
+                  >Change</button>
+                </div>
+              ) : (
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', height: '86px', border: '1px dashed var(--border)', borderRadius: '8px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--muted)' }}>
+                  <CameraIcon size={14} />
+                  Attach photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      setProofFile(f);
+                      setProofPreview(URL.createObjectURL(f));
+                    }}
+                  />
+                </label>
+              )}
+
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.64rem', color: 'var(--muted)', lineHeight: 1.6, marginTop: '0.5rem' }}>
+                Kept as proof of condition at dispatch. If a dispute is raised later,
+                this is what the agent compares against.
+              </p>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
               <button
                 onClick={handleClose}
@@ -241,7 +297,7 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
               <button
                 onClick={handleSubmit}
                 style={{ padding: '0.7rem', borderRadius: '6px', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', background: 'var(--accent)', border: '1px solid var(--accent)', color: 'var(--accent-contrast)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
-              ><PackageIcon size={14}/> Create &amp; Mark Shipped</button>
+               disabled={uploading}><PackageIcon size={14}/> {uploading ? 'Uploading photo...' : 'Create & Mark Shipped'}</button>
             </div>
           </>
         )}
