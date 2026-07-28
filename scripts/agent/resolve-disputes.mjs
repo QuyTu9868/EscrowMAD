@@ -9,6 +9,7 @@
 
 import { createPublicClient, http } from 'viem';
 import { sepolia } from 'viem/chains';
+import sharp from 'sharp';
 import { ESCROW_ABI, FACTORY_ABI, STATE } from '../../lib/escrowAbi.mjs';
 
 const MAX_REASON_LENGTH = 500; // khop policy payload cua Latch
@@ -16,10 +17,10 @@ const GROQ_URL = process.env.GROQ_URL || 'https://api.groq.com/openai/v1/chat/co
 const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.6-27b';
 const IPFS_GATEWAY = process.env.IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs/';
 
-// Cho giua cac don. Moi don gui 2 anh, chiem gan het han muc token moi phut
-// (TPM) cua goi free Groq, nen chay lien tiep se dinh 429 tu don thu hai.
-// TPM reset theo phut nen mac dinh cho 60 giay. Dat 0 de tat.
-const GROQ_DELAY_MS = Number(process.env.GROQ_DELAY_MS ?? 60_000);
+// Cho giua cac don cho khoi cham tran 8000 token/phut cua goi free.
+// Do thuc te: mot don kem 3 anh ton ~5000 token, nen hai don lien tiep la
+// vuot tran. Chi chay duoc mot don moi phut, va TPM reset theo phut.
+const GROQ_DELAY_MS = Number(process.env.GROQ_DELAY_MS ?? 62_000);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -32,15 +33,32 @@ function requireEnv(name) {
   return value;
 }
 
-// Tai anh tu IPFS roi doi sang base64 data URL de gui cho Groq.
+// Tai anh tu IPFS, THU NHO roi doi sang base64 de gui cho Groq.
+//
+// Do thuc te: token tinh theo KICH THUOC ANH (pixel), khong theo dung luong
+// file. Anh 600x600 ton ~1290 token du la PNG 290KB hay JPEG 32KB. Mot don
+// kem 3 anh va prompt ton ~5000 token - vua du duoi tran 8000/phut, nhung
+// chi du cho MOT don moi phut.
+//
+// Van thu nho vi anh chup dien thoai thuong 3000x4000, de nguyen thi mot tam
+// da du vuot tran. Chan canh dai o 768px la du de doi chieu "co phai cung mon
+// hang khong". Doi sang JPEG con giam dung luong gui di khoang 9 lan.
+const MAX_EDGE = Number(process.env.IMAGE_MAX_EDGE ?? 768);
+
 async function fetchImageAsDataUrl(ipfsHash) {
   const res = await fetch(`${IPFS_GATEWAY}${ipfsHash}`);
   if (!res.ok) {
     throw new Error(`Khong tai duoc anh ${ipfsHash}: HTTP ${res.status}`);
   }
-  const buffer = Buffer.from(await res.arrayBuffer());
-  const mime = res.headers.get('content-type') || 'image/jpeg';
-  return `data:${mime};base64,${buffer.toString('base64')}`;
+  const original = Buffer.from(await res.arrayBuffer());
+
+  const resized = await sharp(original)
+    .rotate() // giu dung huong theo EXIF, anh chup dien thoai hay bi xoay
+    .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 80 })
+    .toBuffer();
+
+  return `data:image/jpeg;base64,${resized.toString('base64')}`;
 }
 
 // Groq hay boc JSON trong ```json ... ```, phai boc ra truoc khi parse.
@@ -50,12 +68,18 @@ function stripCodeFence(text) {
   return match ? match[1] : trimmed;
 }
 
-async function askGroq({ apiKey, description, orderedImage, receivedImage }) {
+async function askGroq({ apiKey, description, orderedImage, shippedImage, receivedImage }) {
   const prompt = [
     'You are resolving an escrow dispute between a seller and a buyer.',
     `The seller advertised this item: "${description}".`,
-    'The FIRST image is what the seller advertised (ordered).',
-    'The SECOND image is what the buyer says they actually received.',
+    'Images are given in order:',
+    '1. What the seller advertised when listing the item.',
+    shippedImage ? '2. What the seller photographed as they shipped it.' : null,
+    `${shippedImage ? '3' : '2'}. What the buyer photographed when it arrived.`,
+    '',
+    shippedImage
+      ? 'If the item left the seller intact but arrived damaged, that points to shipping, not to the seller misrepresenting it.'
+      : null,
     '',
     'Decide who is right:',
     '- "release" means the seller was honest, pay the seller.',
@@ -85,6 +109,7 @@ async function askGroq({ apiKey, description, orderedImage, receivedImage }) {
           content: [
             { type: 'text', text: prompt },
             { type: 'image_url', image_url: { url: orderedImage } },
+            ...(shippedImage ? [{ type: 'image_url', image_url: { url: shippedImage } }] : []),
             { type: 'image_url', image_url: { url: receivedImage } },
           ],
         },
@@ -205,9 +230,10 @@ async function main() {
     const address = addresses[orderId];
     console.log(`--- Order ${orderId} (${address}) ---`);
 
-    const [description, orderedHash, receivedHash] = await Promise.all([
+    const [description, orderedHash, shippedHash, receivedHash] = await Promise.all([
       client.readContract({ address, abi: ESCROW_ABI, functionName: 'itemDescription' }),
       client.readContract({ address, abi: ESCROW_ABI, functionName: 'itemImageHash' }),
+      client.readContract({ address, abi: ESCROW_ABI, functionName: 'deliveryProofHash' }),
       client.readContract({ address, abi: ESCROW_ABI, functionName: 'returnEvidenceHash' }),
     ]);
 
@@ -217,12 +243,17 @@ async function main() {
       continue;
     }
 
-    const [orderedImage, receivedImage] = await Promise.all([
+    // Anh luc gui hang la tuy chon: don cu chua co, va contract khong bat buoc.
+    const [orderedImage, receivedImage, shippedImage] = await Promise.all([
       fetchImageAsDataUrl(orderedHash),
       fetchImageAsDataUrl(receivedHash),
+      shippedHash ? fetchImageAsDataUrl(shippedHash).catch(() => null) : null,
     ]);
+    if (shippedImage) console.log('  (co ca anh luc gui hang)');
 
-    const { decision, reason } = await askGroq({ apiKey: groqApiKey, description, orderedImage, receivedImage });
+    const { decision, reason } = await askGroq({
+      apiKey: groqApiKey, description, orderedImage, shippedImage, receivedImage,
+    });
     console.log(`  Groq: ${decision} - ${reason}`);
 
     const result = await sendToLatch({

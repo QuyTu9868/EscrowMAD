@@ -118,7 +118,12 @@ Mock server ở CP-3 không lộ ra được mấy cái này. Chạy với key t
 
 **Sửa cả 2 bằng một dòng: `reasoning_effort: 'none'`** trong body request. Qwen 3.6 nhận `none` / `default`. Chọn `none` thay vì `reasoning_format: 'hidden'` vì `hidden` chỉ giấu khối think đi chứ vẫn tiêu token, không giúp gì cho vấn đề 3.
 
-**3. Trần 8000 token/phút (TPM) của gói free.** Hai ảnh ~300KB ngốn ~7900 token đầu vào, tức **một request đã gần chạm trần**. Chạy 5 đơn liên tiếp là dính `HTTP 429` từ đơn thứ hai.
+**3. Trần 8000 token/phút (TPM) của gói free.** Chạy nhiều đơn liên tiếp là dính `HTTP 429`.
+
+**CẢI CHÍNH (đo lại ngày 2026-07-26):** ban đầu tôi ghi "hai ảnh ngốn ~7900 token" - **sai**. Con số 7931 trong thông báo 429 là *tổng token đã dùng trong cả phút*, không phải chi phí một request. Số đo đúng:
+
+- Token tính theo **kích thước ảnh (pixel)**, không theo dung lượng file. Ảnh 600x600 tốn ~1290 token dù là PNG 290KB hay JPEG 32KB.
+- Một đơn kèm **3 ảnh + prompt = ~5000 token**. Vẫn dưới trần 8000, nhưng chỉ đủ cho **một đơn mỗi phút**.
 
 Xử lý: thêm `GROQ_DELAY_MS` (mặc định 60 giây, vì TPM reset theo phút) chờ giữa các đơn. Gặp 429 thì in lý do rõ ràng rồi dừng, **không retry mù**. Muốn nhanh hơn phải thu nhỏ ảnh trước khi gửi, nhưng cần thêm thư viện xử lý ảnh nên chưa làm.
 
