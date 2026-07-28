@@ -24,7 +24,10 @@ function getConfig() {
       projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'escrowmad-demo',
       chains: [sepolia],
       transports: {
-        [sepolia.id]: http('https://eth-sepolia.g.alchemy.com/v2/oMfhl_VEAr9EQK9-UBrHy'),
+        // Doc tu env de chay duoc tren chain local (chainId da set trung Sepolia).
+        // Truoc day URL bi viet cung nen giao dien luon noi chuyen voi Sepolia
+        // du API route da tro vao chain local.
+        [sepolia.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
       },
       ssr: false,
       multiInjectedProviderDiscovery: true,

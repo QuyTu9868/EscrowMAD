@@ -51,6 +51,12 @@ contracts/cache/
 # ma QR chua secret TOTP - khong bao gio commit
 scripts/admin/admin-totp-qr.png
 
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # foundry (contracts/)
 contracts/out/
 contracts/cache-forge/

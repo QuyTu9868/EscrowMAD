@@ -448,7 +448,7 @@ function HomeInner() {
     [rs,rb,rp,rd,rst,rba,rc,ra,rra,ri,rimg].forEach(r => r());
   }, []);
 
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } =
     useWaitForTransactionReceipt({ hash });
 
@@ -462,6 +462,20 @@ function HomeInner() {
       sender: 'system', message, type: 'system', timestamp: serverTimestamp(),
     });
   }, [contractAddress]);
+
+  // ─── Tx lỗi hoặc bị user từ chối ──────────────────────────────────────────
+  // writeContract() KHÔNG ném lỗi khi user bấm từ chối trong ví - lỗi đi vào
+  // trường error của hook. Nên khối try/catch quanh nó không bao giờ chạy, và
+  // isDeploying kẹt ở true khiến nút disabled vĩnh viễn, phải tải lại trang.
+  useEffect(() => {
+    if (!writeError) return;
+    setIsDeploying(false);
+    const rejected = writeError.name === 'UserRejectedRequestError'
+      || writeError.cause?.code === 4001
+      || /user rejected|denied|rejected the request/i.test(writeError.message || '');
+    setTxStatus(rejected ? '❌ You rejected the transaction' : '❌ ' + (writeError.shortMessage || writeError.message));
+    setTimeout(() => setTxStatus(''), 5000);
+  }, [writeError]);
 
   // ─── Confirmed: normal tx ─────────────────────────────────────────────────
   useEffect(() => {
