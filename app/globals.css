@@ -266,3 +266,23 @@ body {
 .evidence-preview img { width: 100%; height: 170px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
 .evidence-preview button { position: absolute; top: 0.55rem; right: 0.55rem; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.6rem; cursor: pointer; font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); }
 .evidence-note { margin-top: 0.85rem; resize: vertical; font-family: inherit; font-size: 0.85rem; line-height: 1.6; }
+
+/* ── Đánh giá đối tác ── */
+.review-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+.review-rep { font-size: 0.82rem; color: var(--muted); line-height: 1.7; }
+.review-rep .mono { color: var(--text); }
+.star-row { display: inline-flex; gap: 0.15rem; vertical-align: middle; }
+
+.review-mine { display: flex; flex-direction: column; gap: 0.45rem; }
+.review-mine-label { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.review-mine-comment { font-size: 0.88rem; line-height: 1.65; }
+
+.review-done { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--success); }
+.review-comment { resize: vertical; font-family: inherit; font-size: 0.88rem; line-height: 1.6; }
+.review-error { color: var(--danger); font-size: 0.72rem; }
+.review-submit { align-self: flex-start; padding-inline: 1.5rem; }
+
+/* ── Popup tạo đơn giao hàng ── */
+.ship-panel { max-width: 480px; }
+.ship-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.35rem; }
+.ship-eyebrow { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.3rem; }

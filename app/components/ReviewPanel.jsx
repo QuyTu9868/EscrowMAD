@@ -15,7 +15,7 @@ const short = (a) => a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '—';
 
 function Stars({ value, onChange, readOnly }) {
   return (
-    <div style={{ display: 'flex', gap: '0.15rem' }}>
+    <div className="star-row">
       {[1, 2, 3, 4, 5].map((n) => (
         <span
           key={n}
@@ -123,49 +123,54 @@ export default function ReviewPanel({ dealAddress, myAddress, counterpartAddress
   if (loading) return null;
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-      <div className="card-title">Đánh giá đối tác</div>
+    <div className="card review-panel">
+      <div className="card-title">Rate your counterpart</div>
 
-      {reputation && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-          Uy tín của {short(counterpartAddress)}: <Stars value={Math.round(reputation.average)} readOnly />{' '}
-          {reputation.average.toFixed(1)} / 5 ({reputation.count} lượt đánh giá)
-        </div>
-      )}
-      {!reputation && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-          {short(counterpartAddress)} chưa có đánh giá nào.
-        </div>
-      )}
+      <p className="review-rep">
+        {reputation ? (
+          <>
+            {short(counterpartAddress)} holds{' '}
+            <Stars value={Math.round(reputation.average)} readOnly />{' '}
+            <span className="mono">{reputation.average.toFixed(1)} / 5</span> across{' '}
+            {reputation.count} {reputation.count === 1 ? 'review' : 'reviews'}.
+          </>
+        ) : (
+          <>{short(counterpartAddress)} has no reviews yet.</>
+        )}
+      </p>
 
       {myReview ? (
-        <div style={{ fontSize: '0.85rem' }}>
-          <div>Bạn đã đánh giá giao dịch này:</div>
+        <div className="review-mine">
+          <span className="review-mine-label">You rated this deal</span>
           <Stars value={myReview.rating} readOnly />
-          {myReview.comment && <div style={{ marginTop: '0.3rem', color: 'var(--text)' }}>{myReview.comment}</div>}
+          {myReview.comment && <p className="review-mine-comment">{myReview.comment}</p>}
         </div>
       ) : success ? (
-        <div style={{ fontSize: '0.85rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><CheckIcon size={14}/> Đã gửi đánh giá, cảm ơn bạn!</div>
+        <p className="review-done"><CheckIcon size={14} /> Review submitted. Thank you.</p>
       ) : (
         <>
           <Stars value={rating} onChange={setRating} />
+
           <textarea
-            className="input"
-            placeholder="Nhận xét của bạn về đối tác này (không bắt buộc)"
+            className="input review-comment"
+            placeholder="Anything worth telling the next person? (optional)"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             maxLength={500}
             rows={3}
-            style={{ resize: 'vertical', fontFamily: 'inherit' }}
           />
-          {error && <div style={{ color: 'var(--danger, #ef4444)', fontSize: '0.78rem' }}>{error}</div>}
+
+          {error && <p className="review-error mono">{error}</p>}
+
           <button
-            className="btn btn-primary"
-            style={{ alignSelf: 'flex-start' }}
+            className="btn btn-primary review-submit"
             onClick={handleSubmit}
             disabled={submitting || rating < 1}
           >
-            {submitting ? 'Đang gửi...' : 'Gửi đánh giá'}
+            <span className="btn-label">
+              {submitting && <span className="spinner" />}
+              {submitting ? 'Sending' : 'Submit review'}
+            </span>
           </button>
         </>
       )}

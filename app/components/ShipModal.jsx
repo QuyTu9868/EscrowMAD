@@ -176,22 +176,12 @@ export default function ShipModal({ isOpen, onClose, onConfirm, itemDescription,
   const labelStyle  = { fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', marginBottom: '0.25rem' };
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 999,
-      background: 'rgba(23,21,15,0.55)', backdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '1rem',
-    }}>
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: '12px', padding: '1.75rem', width: '100%', maxWidth: '480px',
-        maxHeight: '90vh', overflowY: 'auto',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
-      }}>
+    <div className="modal-backdrop">
+      <div className="modal-panel ship-panel">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div className="ship-head">
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', letterSpacing: '0.18em', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+            <div className="ship-eyebrow">
               GHN Shipping
             </div>
             <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
