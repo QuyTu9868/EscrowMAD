@@ -2,17 +2,15 @@
 pragma solidity ^0.8.20;
 
 import "./EscrowMAD.sol";
-import "./EscrowSBT.sol";
 
 /**
  * @title EscrowFactory
- * @notice Deploy EscrowMAD mới + tự động authorize mint SBT
+ * @notice Deploy EscrowMAD mới và giữ địa chỉ ví agent dùng chung
  */
 contract EscrowFactory {
 
     // ─── Storage ──────────────────────────────────────────────────────────────
 
-    EscrowSBT public immutable sbtContract;
     address[]  public allEscrows;
 
     address public owner;
@@ -35,9 +33,7 @@ contract EscrowFactory {
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
-    constructor(address _sbtContract) {
-        require(_sbtContract != address(0), "Invalid SBT address");
-        sbtContract = EscrowSBT(_sbtContract);
+    constructor() {
         owner = msg.sender;
     }
 
@@ -65,15 +61,11 @@ contract EscrowFactory {
         EscrowMAD escrow = new EscrowMAD{value: msg.value}(
             _itemPrice,
             _description,
-            address(sbtContract),
             msg.sender,
             address(this)
         );
 
         address escrowAddress = address(escrow);
-
-        // Tự động authorize EscrowMAD này được mint SBT
-        sbtContract.authorizeMinter(escrowAddress);
 
         // Lưu lại danh sách
         allEscrows.push(escrowAddress);

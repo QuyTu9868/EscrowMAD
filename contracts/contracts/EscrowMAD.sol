@@ -27,9 +27,6 @@ pragma solidity ^0.8.20;
  *   seller cancel (24h):       Seller: deposit           | Buyer: —
  */
 
-interface IEscrowSBT {
-    function mint(address to, string calldata imageHash) external;
-}
 interface IEscrowFactory {
     function agent() external view returns (address);
 }
@@ -52,7 +49,6 @@ contract EscrowMAD {
 
     address public immutable seller;
     address public buyer;
-    address public immutable sbtContract;
     address public immutable factory;
 
     uint256 public itemPrice;
@@ -130,14 +126,12 @@ contract EscrowMAD {
     constructor(
         uint256 _itemPrice,
         string memory _description,
-        address _sbtContract,
         address _seller,
         address _factory
     ) payable {
         require(_itemPrice > 0,       "Price must be > 0");
         require(_itemPrice % 5 == 0,  "Price must be divisible by 5");
-        require(_sbtContract != address(0), "Invalid SBT contract");
-        require(_factory != address(0),     "Invalid factory");
+        require(_factory != address(0), "Invalid factory");
 
         uint256 requiredDeposit = _itemPrice / 5;
         require(msg.value == requiredDeposit, "Seller must send 20% deposit");
@@ -146,7 +140,6 @@ contract EscrowMAD {
         itemPrice       = _itemPrice;
         deposit         = requiredDeposit;
         itemDescription = _description;
-        sbtContract     = _sbtContract;
         factory         = _factory;
         state           = State.AWAITING_BUYER;
         createdAt       = block.timestamp;
@@ -191,8 +184,7 @@ contract EscrowMAD {
         emit DeliveryConfirmed();
         _transfer(seller, itemPrice + deposit);
         _transfer(buyer,  deposit);
-    IEscrowSBT(sbtContract).mint(buyer, itemImageHash);
-}
+    }
 
     // ─── Seller upload bằng chứng giao hàng ──────────────────────────────────
 

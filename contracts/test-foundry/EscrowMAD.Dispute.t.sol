@@ -4,13 +4,11 @@ pragma solidity ^0.8.25;
 import {Test} from "forge-std/Test.sol";
 import {EscrowMAD} from "../contracts/EscrowMAD.sol";
 import {EscrowFactory} from "../contracts/EscrowFactory.sol";
-import {EscrowSBT} from "../contracts/EscrowSBT.sol";
 
 /// @notice CP-1: raiseDispute() / resolveDispute() / onlyAgent — scoped test,
 /// không test lại toàn bộ luồng escrow cũ (đã có test/EscrowTest.js, tuy đang
 /// hỏng vì lý do khác không liên quan tới CP-1, xem implementation-notes.md).
 contract EscrowMADDisputeTest is Test {
-    EscrowSBT sbt;
     EscrowFactory factory;
     EscrowMAD escrow;
 
@@ -25,9 +23,7 @@ contract EscrowMADDisputeTest is Test {
     uint256 constant POOL       = ITEM_PRICE + 2 * DEPOSIT; // 1.4 ether
 
     function setUp() public {
-        sbt     = new EscrowSBT();
-        factory = new EscrowFactory(address(sbt));
-        sbt.setFactory(address(factory));
+        factory = new EscrowFactory();
         factory.setAgent(agent);
 
         vm.deal(seller, 10 ether);
@@ -200,6 +196,6 @@ contract EscrowMADDisputeTest is Test {
 
     function test_Constructor_RevertsWhenFactoryIsZero() public {
         vm.expectRevert("Invalid factory");
-        new EscrowMAD{value: DEPOSIT}(ITEM_PRICE, "x", address(sbt), seller, address(0));
+        new EscrowMAD{value: DEPOSIT}(ITEM_PRICE, "x", seller, address(0));
     }
 }

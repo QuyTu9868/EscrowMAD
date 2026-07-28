@@ -1,8 +1,11 @@
 /**
- * deploy.js — Deploy EscrowSBT + EscrowFactory lên Sepolia
+ * deploy.js — Deploy EscrowFactory
  *
  * Chạy:
  *   npx hardhat run scripts/deploy.js --network sepolia
+ *
+ * Sau khi deploy phải gán ví agent, nếu không resolveDispute revert voi moi nguoi:
+ *   FACTORY=0x... AGENT=0x... npx hardhat run scripts/setAgent.js --network sepolia
  */
 
 const { ethers } = require("hardhat");
@@ -14,38 +17,23 @@ async function main() {
   console.log(`   Deployer: ${deployer.address}`);
   console.log(`   Balance:  ${ethers.formatEther(await ethers.provider.getBalance(deployer.address))} ETH`);
 
-  // ─── Bước 1: Deploy EscrowSBT ───────────────────────────────────────────
-  console.log("\n📦 Step 1: Deploying EscrowSBT...");
-  const EscrowSBT = await ethers.getContractFactory("EscrowSBT");
-  const sbt = await EscrowSBT.deploy();
-  await sbt.waitForDeployment();
-  const sbtAddress = await sbt.getAddress();
-  console.log(`   ✅ EscrowSBT: ${sbtAddress}`);
-
-  // ─── Bước 2: Deploy EscrowFactory ───────────────────────────────────────
-  console.log("\n📦 Step 2: Deploying EscrowFactory...");
+  console.log("\n📦 Deploying EscrowFactory...");
   const EscrowFactory = await ethers.getContractFactory("EscrowFactory");
-  const factory = await EscrowFactory.deploy(sbtAddress);
+  const factory = await EscrowFactory.deploy();
   await factory.waitForDeployment();
   const factoryAddress = await factory.getAddress();
   console.log(`   ✅ EscrowFactory: ${factoryAddress}`);
 
-  // ─── Bước 3: Set factory trong SBT ──────────────────────────────────────
-  console.log("\n🔐 Step 3: Setting factory in SBT...");
-  const tx = await sbt.setFactory(factoryAddress);
-  await tx.wait();
-  console.log(`   ✅ Factory authorized in SBT`);
-
-  // ─── Tóm tắt ────────────────────────────────────────────────────────────
   console.log("\n" + "═".repeat(60));
   console.log("  📋 DEPLOYMENT SUMMARY");
   console.log("═".repeat(60));
-  console.log(`  EscrowSBT:     ${sbtAddress}`);
   console.log(`  EscrowFactory: ${factoryAddress}`);
-  console.log("\n  👉 Copy 2 địa chỉ này vào .env của frontend!");
-  console.log("\n  👉 Đăng ký Chainlink Automation tại:");
-  console.log("     https://automation.chain.link/sepolia");
-  console.log(`     Target contract: ${sbtAddress}`);
+  console.log(`  owner:         ${await factory.owner()}`);
+  console.log(`  agent:         ${await factory.agent()}  (0x0 = chua set)`);
+  console.log("\n  👉 Cap nhat NEXT_PUBLIC_FACTORY_ADDRESS trong .env.local");
+  console.log("     va FACTORY_ADDRESS trong scripts/agent/.env");
+  console.log("\n  👉 Roi gan vi agent:");
+  console.log(`     FACTORY=${factoryAddress} AGENT=0x... npx hardhat run scripts/setAgent.js --network sepolia`);
   console.log("═".repeat(60));
 }
 
