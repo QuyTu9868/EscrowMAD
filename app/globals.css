@@ -248,6 +248,55 @@ body {
 .evidence-item img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
 .evidence-missing { height: 200px; display: grid; place-items: center; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; }
 
+/* Địa chỉ buyer/seller bấm được, mở popup đánh giá */
+.info-row-you { background: var(--accent-soft, rgba(0,0,0,0.035)); border-radius: 6px; padding: 0.5rem 0.6rem; margin: 0 -0.5rem; }
+.party-link { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: none; padding: 0.1rem 0; cursor: pointer; color: var(--text); font-size: 0.85rem; }
+.party-link:hover .mono { text-decoration: underline; }
+.party-rating { display: inline-flex; align-items: center; gap: 0.18rem; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; color: var(--gold, #9A7B1F); border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.42rem; }
+.party-star { font-size: 0.72rem; line-height: 1; }
+
+/* Popup danh sách đánh giá */
+.reviews-score { display: flex; align-items: center; gap: 0.6rem; padding-bottom: 1.1rem; border-bottom: 1px solid var(--border); }
+.reviews-count { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); }
+.reviews-empty { color: var(--muted); font-size: 0.82rem; line-height: 1.6; padding: 0.5rem 0 0.25rem; }
+.reviews-item { padding: 1.1rem 0; border-bottom: 1px solid var(--border); }
+.reviews-item:last-child { border-bottom: none; }
+.reviews-item-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.reviews-by { font-size: 0.68rem; color: var(--muted); }
+.reviews-comment { margin-top: 0.6rem; font-size: 0.85rem; line-height: 1.65; color: var(--text); }
+
+/* Trang chi tiết một dispute (admin) */
+.admin-open { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1.25rem; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; color: var(--accent2); text-decoration: none; }
+.admin-open:hover { text-decoration: underline; }
+
+.detail-back { display: inline-block; margin-bottom: 2rem; font-size: 0.72rem; letter-spacing: 0.06em; color: var(--muted); text-decoration: none; }
+.detail-back:hover { color: var(--text); }
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+.detail-card { padding: 1.75rem; }
+
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.35rem 2rem; }
+.detail-field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.detail-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.detail-value { font-size: 0.9rem; color: var(--text); overflow-wrap: anywhere; }
+.detail-value a { color: var(--accent2); text-decoration: none; }
+.detail-value a:hover { text-decoration: underline; }
+
+.detail-desc { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.detail-desc p { margin-top: 0.5rem; font-size: 0.92rem; line-height: 1.7; color: var(--text); }
+
+.detail-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
+@media (max-width: 760px) { .detail-photos { grid-template-columns: 1fr; } }
+.detail-photo figcaption { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.6rem; }
+.detail-photo-label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); }
+.detail-photo-caption { font-size: 0.72rem; color: var(--muted); }
+.detail-photo img { width: 100%; height: 240px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
+.detail-photo-empty { height: 240px; display: grid; place-items: center; align-content: center; gap: 0.5rem; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; text-align: center; padding: 1rem; }
+.detail-photo-raw, .detail-photo-hash { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted); overflow-wrap: anywhere; }
+.detail-photo-hash { display: block; margin-top: 0.5rem; }
+
+.detail-reason { font-size: 0.95rem; line-height: 1.75; margin: 1.25rem 0 1.75rem; }
+.detail-when { font-size: 0.7rem; color: var(--muted); }
+
 /* Nút đổi theme thả nổi — dùng cho trang không có navbar (admin) */
 .theme-toggle-floating { position: fixed; top: 1.25rem; right: 1.5rem; z-index: 50; background: var(--surface); }
 

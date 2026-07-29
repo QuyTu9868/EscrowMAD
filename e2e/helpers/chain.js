@@ -82,3 +82,16 @@ export async function makeEscrowWithBothImages(opts) {
   await requestReturn(escrow);
   return escrow;
 }
+
+/** Dua escrow vao trang thai DISPUTED de no xuat hien tren trang admin. */
+export async function raiseDispute(escrow) {
+  return send(ACCOUNTS.buyer, { address: escrow, abi: ESCROW_ABI, functionName: 'raiseDispute' });
+}
+
+/** orderId = chi so trong allEscrows, tuc escrow moi nhat co id = tong - 1. */
+export async function latestOrderId() {
+  const total = await publicClient.readContract({
+    address: FACTORY_ADDRESS, abi: FACTORY_ABI, functionName: 'getTotalEscrows',
+  });
+  return Number(total) - 1;
+}

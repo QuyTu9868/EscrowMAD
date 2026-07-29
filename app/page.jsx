@@ -14,6 +14,8 @@ import { collection, addDoc, getDocs, onSnapshot, orderBy, query, serverTimestam
 import ShipModal from './components/ShipModal';
 import EvidenceModal from './components/EvidenceModal';
 import ReviewPanel from './components/ReviewPanel';
+import ReviewsModal from './components/ReviewsModal';
+import PartyLink from './components/PartyLink';
 import { sendEscrowEmail } from './emailService';
 import {
   CheckIcon, CloseIcon, UndoIcon, PackageIcon, SunIcon, MoonIcon, LockIcon, MailIcon,
@@ -393,6 +395,8 @@ function HomeInner() {
   const [isDeploying,     setIsDeploying]     = useState(false);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [showShipModal, setShowShipModal] = useState(false);
+  // Dia chi dang xem danh gia. null = popup dong.
+  const [reviewsFor, setReviewsFor] = useState(null);
   const [deployEmail,   setDeployEmail]   = useState('');
   const [buyerEmail,    setBuyerEmail]    = useState('');
   const [buyerProvince, setBuyerProvince] = useState('');
@@ -1194,13 +1198,15 @@ useEffect(() => {
 
             <div className="card reveal" style={{ '--index': 1 }}>
               <div className="card-title">Participants</div>
-              <div className="info-row" style={isSeller ? {background:'rgba(124,58,237,0.08)', borderRadius:'6px', padding:'0.5rem 0.6rem', margin:'0 -0.5rem'} : {}}>
+              <div className={`info-row${isSeller ? ' info-row-you' : ''}`}>
                   <span className="info-label">Seller</span>
-                  <span className="info-value mono">{short(seller)}{isSeller && <span className="you-badge">YOU</span>}</span>
+                  <PartyLink address={seller} isYou={isSeller} onOpen={setReviewsFor} />
               </div>
-              <div className="info-row" style={isBuyer ? {background:'rgba(124,58,237,0.08)', borderRadius:'6px', padding:'0.5rem 0.6rem', margin:'0 -0.5rem'} : {}}>
+              <div className={`info-row${isBuyer ? ' info-row-you' : ''}`}>
                   <span className="info-label">Buyer</span>
-                  <span className="info-value mono">{isZero(buyer) ? '—' : short(buyer)}{isBuyer && <span className="you-badge">YOU</span>}</span>
+                  {isZero(buyer)
+                    ? <span className="info-value mono">not joined yet</span>
+                    : <PartyLink address={buyer} isYou={isBuyer} onOpen={setReviewsFor} />}
             </div>
             </div>
 
@@ -1443,6 +1449,12 @@ useEffect(() => {
   itemDescription={itemDescription}
   isLoading={isLoading}
   contractAddress={contractAddress}
+/>
+
+<ReviewsModal
+  isOpen={reviewsFor !== null}
+  address={reviewsFor}
+  onClose={() => setReviewsFor(null)}
 />
     </div>
   );

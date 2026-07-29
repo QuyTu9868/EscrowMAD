@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { createPublicClient, http } from 'viem';
 import { sepolia } from 'viem/chains';
 import { initializeApp, getApps } from 'firebase/app';
@@ -14,12 +15,14 @@ export const dynamic = 'force-dynamic';
 
 const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs/';
 
-// Dispute dang cho: khong nam trong Firestore ma nam tren chain (state == DISPUTED).
-async function loadPending() {
+// Doc mot lan danh sach escrow cua factory hien tai. Ca hai muc tren trang deu
+// can no: muc dang cho de biet don nao DISPUTED, muc da xu de biet ban ghi
+// Firestore nao thuoc ve factory nay.
+async function loadChain() {
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
   const factoryAddress = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
   if (!rpcUrl || !factoryAddress) {
-    return { items: [], error: 'Thieu NEXT_PUBLIC_RPC_URL hoac NEXT_PUBLIC_FACTORY_ADDRESS' };
+    return { ids: [], addresses: [], states: [], error: 'Thieu NEXT_PUBLIC_RPC_URL hoac NEXT_PUBLIC_FACTORY_ADDRESS' };
   }
 
   try {
@@ -33,7 +36,18 @@ async function loadPending() {
     const states = await Promise.all(
       addresses.map((address) => client.readContract({ address, abi: ESCROW_ABI, functionName: 'getState' })),
     );
+    return { client, ids, addresses, states, error: null };
+  } catch (err) {
+    return { ids: [], addresses: [], states: [], error: err.shortMessage || err.message };
+  }
+}
 
+// Dispute dang cho: khong nam trong Firestore ma nam tren chain (state == DISPUTED).
+async function loadPending(chain) {
+  if (chain.error) return { items: [], error: chain.error };
+
+  try {
+    const { client, ids, addresses, states } = chain;
     const disputedIds = ids.filter((id) => states[id] === STATE.DISPUTED);
     const items = await Promise.all(
       disputedIds.map(async (id) => {
@@ -54,7 +68,12 @@ async function loadPending() {
 }
 
 // Dispute da xu ly: agent ghi vao Firestore sau khi gui tx.
-async function loadResolved() {
+//
+// Chi giu ban ghi co escrowAddress thuoc factory dang dung. orderId khong dinh
+// danh duoc gi: no la chi so trong allEscrows nen ve 0 moi lan deploy lai
+// factory, va chain local dung chung Firebase voi Sepolia. Truoc khi loc, trang
+// nay hien ca phan quyet cua nhung escrow da khong con ton tai.
+async function loadResolved(chain) {
   try {
     const app = getApps().length === 0
       ? initializeApp({
@@ -68,23 +87,39 @@ async function loadResolved() {
       : getApps()[0];
 
     const snapshot = await getDocs(query(collection(getFirestore(app), 'disputeResolutions'), orderBy('resolvedAt', 'desc')));
-    const items = snapshot.docs.map((entry) => {
-      const data = entry.data();
-      return {
-        id: entry.id,
-        orderId: data.orderId,
-        decision: data.decision,
-        reason: data.reason,
-        txHash: data.txHash,
-        model: data.model,
-        resolvedAt: data.resolvedAt?.toDate?.() ? data.resolvedAt.toDate().toISOString() : null,
-      };
-    });
+
+    // Dia chi cua factory hien tai, chu thuong de so khoi phu thuoc checksum.
+    const known = new Map(chain.addresses.map((a, id) => [a.toLowerCase(), id]));
+
+    const items = snapshot.docs
+      .map((entry) => {
+        const data = entry.data();
+        return {
+          id: entry.id,
+          escrowAddress: data.escrowAddress || null,
+          orderId: data.orderId,
+          decision: data.decision,
+          reason: data.reason,
+          txHash: data.txHash,
+          model: data.model,
+          resolvedAt: data.resolvedAt?.toDate?.() ? data.resolvedAt.toDate().toISOString() : null,
+        };
+      })
+      // Ban ghi cu khong co escrowAddress thi khong the biet thuoc escrow nao,
+      // bo qua thay vi doan theo orderId roi gan nham.
+      .filter((item) => item.escrowAddress && known.has(item.escrowAddress))
+      // orderId trong ban ghi co the la cua factory cu, lay lai theo dia chi.
+      .map((item) => ({ ...item, orderId: known.get(item.escrowAddress) }));
+
     return { items, error: null };
   } catch (err) {
     return { items: [], error: err.message };
   }
 }
+
+// Don cu tu truoc khi co EvidenceModal luu thang chuoi 'evidence' vao contract
+// thay vi hash IPFS. Render <img> voi no thi gateway tra 400 va trang hien anh vo.
+const looksLikeIpfs = (h) => typeof h === 'string' && /^(Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[a-z2-7]{20,})/.test(h);
 
 function Evidence({ orderedHash, receivedHash }) {
   if (!orderedHash && !receivedHash) return null;
@@ -96,11 +131,13 @@ function Evidence({ orderedHash, receivedHash }) {
       ].map(({ label, hash }) => (
         <figure className="evidence-item" key={label}>
           <figcaption>{label}</figcaption>
-          {hash ? (
+          {!hash ? (
+            <div className="evidence-missing">no image</div>
+          ) : looksLikeIpfs(hash) ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={`${IPFS_GATEWAY}${hash}`} alt={label} />
           ) : (
-            <div className="evidence-missing">no image</div>
+            <div className="evidence-missing">not an IPFS hash</div>
           )}
         </figure>
       ))}
@@ -123,7 +160,8 @@ export default async function AdminDisputesPage() {
   const valid = await isSessionValid(cookieStore.get(ADMIN_COOKIE)?.value);
   if (!valid) redirect('/admin/login');
 
-  const [pending, resolved] = await Promise.all([loadPending(), loadResolved()]);
+  const chain = await loadChain();
+  const [pending, resolved] = await Promise.all([loadPending(chain), loadResolved(chain)]);
 
   return (
     <ThemeShell>
@@ -167,6 +205,9 @@ export default async function AdminDisputesPage() {
               </div>
               <p className="admin-desc">{item.description}</p>
               <Evidence orderedHash={item.orderedHash} receivedHash={item.receivedHash} />
+              <Link href={`/admin/disputes/${item.orderId}`} className="admin-open">
+                Open full record <span aria-hidden="true">&rarr;</span>
+              </Link>
             </article>
           ))}
         </div>
@@ -211,6 +252,9 @@ export default async function AdminDisputesPage() {
                   </a>
                 )}
               </div>
+              <Link href={`/admin/disputes/${item.orderId}`} className="admin-open">
+                Open full record <span aria-hidden="true">&rarr;</span>
+              </Link>
             </article>
           ))}
         </div>

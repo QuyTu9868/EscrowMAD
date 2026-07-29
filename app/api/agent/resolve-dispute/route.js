@@ -106,6 +106,11 @@ export async function POST(req) {
   // thành công vì tx đã lên chain rồi (tiền đã chuyển xong ở bước 4-5).
   try {
     await addDoc(collection(db, 'disputeResolutions'), {
+      // orderId KHONG dinh danh duy nhat duoc: no la chi so trong allEscrows nen
+      // ve 0 moi lan deploy lai factory, va chain local dung chung Firebase voi
+      // Sepolia. Chi co dia chi escrow moi tro dung mot hop dong. Luu chu thuong
+      // de so sanh khoi phu thuoc checksum.
+      escrowAddress: escrowAddress.toLowerCase(),
       orderId,
       decision,
       reason,

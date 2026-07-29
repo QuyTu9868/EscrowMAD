@@ -13,7 +13,7 @@ import { CheckIcon } from './Icons';
 
 const short = (a) => a ? `${a.slice(0, 6)}...${a.slice(-4)}` : '—';
 
-function Stars({ value, onChange, readOnly }) {
+export function Stars({ value, onChange, readOnly }) {
   return (
     <div className="star-row">
       {[1, 2, 3, 4, 5].map((n) => (
